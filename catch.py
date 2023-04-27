@@ -2,6 +2,7 @@ from skimage.transform import resize
 import random
 import numpy as np
 
+
 class CatchEnv():
     def __init__(self):
         self.size = 21
@@ -21,19 +22,19 @@ class CatchEnv():
 
         return self.step(2)[0]
 
-
     def step(self, action):
         def left():
             if self.pos > 3:
                 self.pos -= 2
+
         def right():
             if self.pos < 17:
                 self.pos += 2
+
         def noop():
             pass
         {0: left, 1: right, 2: noop}[action]()
 
-        
         self.image[self.bally, self.ballx] = 0
         self.ballx += self.vx
         self.bally += self.vy
@@ -47,11 +48,13 @@ class CatchEnv():
 
         self.image[-5].fill(0)
         self.image[-5, self.pos-2:self.pos+3] = np.ones(5)
-    
-        terminal = self.bally == self.size - 1 - 4
-        reward = int(self.pos - 2 <= self.ballx <= self.pos + 2) if terminal else 0
 
-        [self.state.append(resize(self.image, (84, 84))) for _ in range(self.fps - len(self.state) + 1)]
+        terminal = self.bally == self.size - 1 - 4
+        reward = int(self.pos - 2 <= self.ballx <=
+                     self.pos + 2) if terminal else 0
+
+        [self.state.append(resize(self.image, (84, 84)))
+         for _ in range(self.fps - len(self.state) + 1)]
         self.state = self.state[-self.fps:]
 
         return np.transpose(self.state, [1, 2, 0]), reward, terminal
@@ -72,16 +75,16 @@ def run_environment():
 
     for ep in range(number_of_episodes):
         env.reset()
-        
-        state, reward, terminal = env.step(1) 
+
+        state, reward, terminal = env.step(1)
 
         while not terminal:
-            state, reward, terminal = env.step(random.randint(0,2))
+            state, reward, terminal = env.step(random.randint(0, 2))
             print("Reward obtained by the agent: {}".format(reward))
             state = np.squeeze(state)
 
         print("End of the episode")
-            
+
 
 if __name__ == "__main__":
     run_environment()
