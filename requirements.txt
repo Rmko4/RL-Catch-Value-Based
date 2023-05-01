@@ -2,3 +2,4 @@ numpy
 scikit-image
 gymnasium
 opencv-python
+torch
