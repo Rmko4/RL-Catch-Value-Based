@@ -1,13 +1,13 @@
-from catch import CatchEnv
-import cv2
-import numpy as np
 import random
-
+from pathlib import Path
 from typing import List
 
-from pathlib import Path
+import cv2
+import numpy as np
 
-video_path = Path("videos")
+from catch import CatchEnv
+
+VIDEO_PATH = Path("videos")
 
 def writeVideo(history: List[np.ndarray],
                output_file: str = 'output.mp4'):
@@ -46,7 +46,7 @@ def run_environment():
             # history.append(state[:, :, -1])
             history.append(env.image.copy())
 
-        writeVideo(history, str(video_path/"output.mp4"))
+        writeVideo(history, str(VIDEO_PATH/"output.mp4"))
         print("End of the episode")
 
 
