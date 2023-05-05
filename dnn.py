@@ -1,6 +1,6 @@
 from typing import Tuple
 
-from torch import nn
+from torch import nn, Tensor
 
 DEFAULT_STATE_SHAPE = (84, 84, 4)
 
@@ -33,5 +33,5 @@ class DeepQNetwork(nn.Module):
             nn.Linear(512, n_actions)
         )
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         return self.net(x)
