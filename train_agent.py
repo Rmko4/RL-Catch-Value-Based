@@ -4,10 +4,15 @@ from typing import List
 
 import cv2
 import numpy as np
+from pytorch_lightning import Trainer
+from pytorch_lightning.loggers import CSVLogger
 
 from catch import CatchEnv
+from argparser import get_args
+from catch_module import CatchRLModule
 
 VIDEO_PATH = Path("videos")
+
 
 def writeVideo(history: List[np.ndarray],
                output_file: str = 'output.mp4'):
@@ -50,5 +55,12 @@ def run_environment():
         print("End of the episode")
 
 
+def train(hparams):
+    catch_module = CatchRLModule(**vars(hparams))
+    trainer = Trainer(max_steps=1e4, logger=CSVLogger(save_dir="logs/"),)
+    trainer.fit(catch_module)
+
+
 if __name__ == "__main__":
-    run_environment()
+    hparams = get_args()
+    train(hparams)

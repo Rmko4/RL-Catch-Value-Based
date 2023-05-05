@@ -30,10 +30,10 @@ class CatchRLModule(LightningModule):
         # Does frame inspection to find parameters
         self.save_hyperparameters()
 
-        self.env = CatchEnv
+        self.env = CatchEnv()
 
         n_actions = self.env.get_num_actions()
-        state_shape = self.env.state_shape()[::-1]
+        state_shape = self.env.state_shape()
 
         # Initialize networks
         self.Q_network = DeepQNetwork(n_actions, state_shape)
@@ -48,6 +48,7 @@ class CatchRLModule(LightningModule):
             self.env, self.Q_network, self.replay_buffer, epsilon_schedule)
 
         self.loss = nn.MSELoss()
+        self.episode = 0
         self.episode_reward = 0
 
     def forward(self, x):
@@ -83,16 +84,19 @@ class CatchRLModule(LightningModule):
 
         # Logging
         self.episode_reward += reward
-        if terminal:
-            self.episode_reward = 0
-            self.log("episode reward", self.episode_reward,
-                     on_step=True, on_epoch=False, prog_bar=True)
 
         self.log('epsilon', self.agent.epsilon, on_step=True, on_epoch=False)
         self.log_dict({'train_loss': loss,
                        'step': self.hparams.global_step,
                        'reward': reward,
+                       'episode': self.episode,
                        }, on_step=True, on_epoch=False, prog_bar=True)
+
+        if terminal:
+            self.log("episode reward", self.episode_reward,
+                     on_step=True, on_epoch=False, prog_bar=True)
+            self.episode += 1
+            self.episode_reward = 0
 
         return loss
 
