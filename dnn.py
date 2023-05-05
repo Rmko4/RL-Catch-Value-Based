@@ -5,7 +5,7 @@ from torch import nn
 DEFAULT_STATE_SHAPE = (84, 84, 4)
 
 
-class DeepQNetwork(nn.module):
+class DeepQNetwork(nn.Module):
     pass
 
     def __init__(self,
