@@ -38,7 +38,6 @@ class CatchRLModule(LightningModule):
         # Initialize networks
         self.Q_network = DeepQNetwork(n_actions, state_shape)
         self.target_Q_network = DeepQNetwork(n_actions, state_shape)
-        self.update_target_network()
 
         # Initialize replay buffer and agent
         self.replay_buffer = ReplayBuffer(capacity=buffer_capacity)
@@ -65,7 +64,7 @@ class CatchRLModule(LightningModule):
 
     @torch.no_grad()
     def compute_td_target(self, batch: Trajectory) -> Tensor:
-        Q_values = self.target_Q_network(batch.next_state).max(dim=-1)
+        Q_values = self.target_Q_network(batch.next_state).max(dim=-1).values
         Q_values[batch.terminal] = 0.  # Terminal state has 0 Q-value
         td_target = batch.reward + self.hparams.gamma * Q_values
         return td_target
@@ -74,21 +73,21 @@ class CatchRLModule(LightningModule):
         reward, terminal = self.agent.step()
 
         td_target = self.compute_td_target(batch)
+        # Unsqueeze to get (batch_size, 1) shape
         Q_values = self.Q_network(batch.state).gather(
-            dim=-1, index=batch.action)
+            dim=-1, index=batch.action.unsqueeze(-1)).squeeze(-1)
 
         loss = self.loss(Q_values, td_target)
 
-        if self.hparams.global_step % self.hparams.target_net_update_freq == 0:
+        if self.global_step % self.hparams.target_net_update_freq == 0:
             self.update_target_network()
 
         # Logging
         self.episode_reward += reward
 
-        self.log('epsilon', self.agent.epsilon, on_step=True, on_epoch=False)
+        self.log('epsilon', self.agent.epsilon, on_step=True, on_epoch=False, prog_bar=True)
         self.log_dict({'train_loss': loss,
-                       'step': self.hparams.global_step,
-                       'reward': reward,
+                       'step': self.global_step,
                        'episode': self.episode,
                        }, on_step=True, on_epoch=False, prog_bar=True)
 

@@ -11,5 +11,5 @@ class EpsilonDecay():
     def __call__(self, t):
         epsilon = self.epsilon_end + \
             (self.epsilon_start - self.epsilon_end) * \
-            math.exp(-1. * t / self.decay_steps)
+            math.exp(-t / self.decay_steps)
         return epsilon
