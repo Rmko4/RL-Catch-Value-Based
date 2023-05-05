@@ -20,7 +20,7 @@ class CatchRLModule(LightningModule):
                  gamma: float = 0.99,
                  epsilon_start: float = 0.1,
                  epsilon_end: float = 0.01,
-                 epsilon_decay_steps: float = 1000,
+                 epsilon_decay_rate: float = 1000,
                  buffer_capacity: int = 1000,
                  replay_warmup_steps: int = 10,
                  target_net_update_freq: int = 100,
@@ -42,7 +42,7 @@ class CatchRLModule(LightningModule):
         # Initialize replay buffer and agent
         self.replay_buffer = ReplayBuffer(capacity=buffer_capacity)
         epsilon_schedule = EpsilonDecay(
-            epsilon_start, epsilon_end, epsilon_decay_steps)
+            epsilon_start, epsilon_end, epsilon_decay_rate)
         self.agent = QNetworkAgent(
             self.env, self.Q_network, self.replay_buffer, epsilon_schedule)
 
