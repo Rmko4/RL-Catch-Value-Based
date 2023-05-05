@@ -24,6 +24,7 @@ class CatchRLModule(LightningModule):
                  buffer_capacity: int = 1000,
                  replay_warmup_steps: int = 10,
                  target_net_update_freq: int = 100,
+                 hidden_size: int = 128,
                  *args: Any,
                  **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)

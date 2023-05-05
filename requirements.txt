@@ -4,3 +4,4 @@ gymnasium
 opencv-python
 torch
 pytorch-lightning
+wandb

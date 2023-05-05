@@ -11,6 +11,7 @@ class DeepQNetwork(nn.Module):
     def __init__(self,
                  n_actions: int = 3,
                  state_shape: Tuple[int] = DEFAULT_STATE_SHAPE,
+                 hidden_size: int = 32
                  ) -> None:
         super().__init__()
 
@@ -28,9 +29,9 @@ class DeepQNetwork(nn.Module):
             nn.Conv2d(64, 64, kernel_size=3, stride=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(flatten_input_size, 512),
+            nn.Linear(flatten_input_size, hidden_size),
             nn.ReLU(),
-            nn.Linear(512, n_actions)
+            nn.Linear(hidden_size, n_actions)
         )
 
     def forward(self, x: Tensor) -> Tensor:

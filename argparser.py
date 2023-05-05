@@ -3,6 +3,9 @@ import argparse
 def get_args():
     parser = argparse.ArgumentParser(description="Training agent on Catch")
 
+    parser.add_argument("--run_name", type=str, default="train",
+                        help="Name of the run")
+
     parser.add_argument("--batch_size", type=int, default=32,
                         help="Batch size for training")
     parser.add_argument("--learning_rate", type=float, default=1e-3,
