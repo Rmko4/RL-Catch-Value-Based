@@ -21,7 +21,7 @@
                 "--epsilon_decay_rate", "1000",
                 "--buffer_capacity", "1000",
                 "--replay_warmup_steps", "10",
-                "--target_net_update_freq", "50",
+                "--soft_update_tau", "0.01",
                 "--hidden_size", "32",
                 "--n_filters", "16",
             ]

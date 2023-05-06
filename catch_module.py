@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Callable
 
 import torch
 from pytorch_lightning import LightningModule
@@ -25,6 +25,7 @@ class CatchRLModule(LightningModule):
                  replay_warmup_steps: int = 10,
                  target_net_update_freq: int = None,
                  soft_update_tau: float = 1e-3,
+                 double_q_learning: bool = False,
                  hidden_size: int = 128,
                  n_filters: int = 32,
                  *args: Any,
@@ -51,9 +52,9 @@ class CatchRLModule(LightningModule):
         self.agent = QNetworkAgent(
             self.env, self.Q_network, self.replay_buffer, epsilon_schedule)
 
-        self.update_target_network = self.scheduled_update_target_network \
-            if target_net_update_freq else self.soft_update_target_network
-        
+        self.update_target_network = self.target_update_fn
+        self.compute_next_Q = self.compute_next_Q_fn
+
         self.hard_update_target_network()
 
         self.loss = nn.MSELoss()
@@ -67,13 +68,27 @@ class CatchRLModule(LightningModule):
         for _ in range(self.hparams.replay_warmup_steps):
             self.agent.step()
 
+    def target_update_fn(self) -> Callable:
+        if self.hparams.double_q_learning:
+            return self.scheduled_update(self.swap_networks)
+        # Presence of target_net_update_freq indicates hard update
+        if self.hparams.target_net_update_freq:
+            return self.scheduled_update(self.hard_update_target_network)
+        return self.soft_update_target_network
+
+    def swap_networks(self):
+        self.Q_network, self.target_Q_network = \
+            self.target_Q_network, self.Q_network
+
+    def scheduled_update(self, fn: Callable):
+        def scheduled_fn():
+            if self.global_step % self.hparams.target_net_update_freq == 0:
+                fn()
+        return scheduled_fn
+
     def hard_update_target_network(self):
         # Copy the weights from Q_network to target_Q_network
         self.target_Q_network.load_state_dict(self.Q_network.state_dict())
-
-    def scheduled_update_target_network(self):
-        if self.global_step % self.hparams.target_net_update_freq == 0:
-            self.hard_update_target_network()
 
     def soft_update_target_network(self):
         Q_net_state = self.Q_network.state_dict()
@@ -81,14 +96,32 @@ class CatchRLModule(LightningModule):
 
         tau = self.hparams.soft_update_tau
         for key in Q_net_state:
-            target_net_state[key] = Q_net_state[key] * \
-                tau + target_net_state[key]*(1-tau)
+            target_net_state[key] = Q_net_state[key]*tau + \
+                target_net_state[key]*(1 - tau)
 
         self.target_Q_network.load_state_dict(target_net_state)
 
+    def compute_next_Q_fn(self) -> Callable:
+        if self.hparams.double_q_learning:
+            return self.next_double_Q_values
+        return self.next_Q_values
+
+    @torch.no_grad()
+    def next_Q_values(self, batch: Trajectory) -> Tensor:
+        Q_values = self.target_Q_network(batch.next_state).max(dim=-1).values
+        return Q_values
+
+    @torch.no_grad()
+    def next_double_Q_values(self, batch: Trajectory) -> Tensor:
+        max_actions = self.Q_network(
+            batch.next_state).argmax(dim=-1, keepdim=True)
+        Q_values = self.target_Q_network(batch.next_state).gather(
+            dim=-1, index=max_actions).squeeze(-1)
+        return Q_values
+
     @torch.no_grad()
     def compute_td_target(self, batch: Trajectory) -> Tensor:
-        Q_values = self.target_Q_network(batch.next_state).max(dim=-1).values
+        Q_values = self.compute_next_Q(batch)
         Q_values[batch.terminal] = 0.  # Terminal state has 0 Q-value
         td_target = batch.reward + self.hparams.gamma * Q_values
         return td_target
@@ -102,7 +135,7 @@ class CatchRLModule(LightningModule):
             dim=-1, index=batch.action.unsqueeze(-1)).squeeze(-1)
 
         loss = self.loss(Q_values, td_target)
-        
+
         self.update_target_network()
 
         # Logging
