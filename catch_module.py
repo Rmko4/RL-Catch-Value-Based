@@ -69,8 +69,8 @@ class CatchRLModule(LightningModule):
             self.agent.step()
 
     def target_update_fn(self) -> Callable:
-        if self.hparams.double_q_learning:
-            return self.scheduled_update(self.swap_networks)
+        # if self.hparams.double_q_learning:
+        #     return self.scheduled_update(self.swap_networks)
         # Presence of target_net_update_freq indicates hard update
         if self.hparams.target_net_update_freq:
             return self.scheduled_update(self.hard_update_target_network)
