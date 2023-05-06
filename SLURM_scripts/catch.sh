@@ -20,14 +20,14 @@ python train_agent.py \
 --run_name train \
 --max_steps 20000 \
 --batch_size 32 \
---learning_rate 0.001 \
+--learning_rate 0.0005 \
 --gamma 0.99 \
 --epsilon_start 1.0 \
 --epsilon_end 0.01 \
 --epsilon_decay_rate 2000 \
 --buffer_capacity 10000 \
 --replay_warmup_steps 10 \
---soft_update_tau 0.01 \
---hidden_size 128 \
---n_filters 16 \
+--soft_update_tau 0.05 \
+--hidden_size 256 \
+--n_filters 8 \
 --double_q_learning

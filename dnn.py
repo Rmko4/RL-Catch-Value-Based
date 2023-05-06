@@ -5,13 +5,9 @@ from torch import nn, Tensor
 DEFAULT_STATE_SHAPE = (84, 84, 4)
 
 
-class DeepQNetwork(nn.Module):
-    pass
-
+class ConvBackbone(nn.module):
     def __init__(self,
-                 n_actions: int = 3,
                  state_shape: Tuple[int] = DEFAULT_STATE_SHAPE,
-                 hidden_size: int = 128,
                  n_filters: int = 32
                  ) -> None:
         super().__init__()
@@ -22,7 +18,7 @@ class DeepQNetwork(nn.Module):
         f1 = n_filters
         f2 = 2*n_filters
 
-        flatten_input_size = f2 * \
+        self.output_size = f2 * \
             _out_size(state_shape[1]) * _out_size(state_shape[2])
 
         self.net = nn.Sequential(
@@ -33,10 +29,61 @@ class DeepQNetwork(nn.Module):
             nn.Conv2d(f2, f2, kernel_size=3, stride=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(flatten_input_size, hidden_size),
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.net(x)
+
+
+class DeepQNetwork(nn.Module):
+    def __init__(self,
+                 n_actions: int = 3,
+                 state_shape: Tuple[int] = DEFAULT_STATE_SHAPE,
+                 hidden_size: int = 128,
+                 n_filters: int = 32
+                 ) -> None:
+        super().__init__()
+
+        self.conv = ConvBackbone(state_shape, n_filters)
+
+        self.ff = nn.Sequential(
+            nn.Linear(self.conv.output_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, n_actions)
         )
 
     def forward(self, x: Tensor) -> Tensor:
-        return self.net(x)
+        x = self.conv(x)
+        return self.ff(x)
+
+
+class DuelingDQN(nn.Module):
+    pass
+
+    def __init__(self,
+                 n_actions: int = 3,
+                 state_shape: Tuple[int] = DEFAULT_STATE_SHAPE,
+                 hidden_size: int = 128,
+                 n_filters: int = 32
+                 ) -> None:
+        super().__init__()
+
+        self.conv = ConvBackbone(state_shape, n_filters)
+
+        self.ff_value = nn.Sequential(
+            nn.Linear(self.conv.output_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, 1)
+        )
+
+        self.ff_advantage = nn.Sequential(
+            nn.Linear(self.conv.output_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, n_actions)
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        x = self.conv(x)
+        value: Tensor = self.ff_value(x)
+        advantage: Tensor = self.ff_advantage(x)
+        return value + advantage - advantage.mean(dim=-1, keepdim=True)
