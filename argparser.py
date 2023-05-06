@@ -25,6 +25,8 @@ def get_args():
                         help="Number of steps to warm up replay buffer")
     parser.add_argument("--target_net_update_freq", type=int, default=100,
                         help="Number of steps between target network updates")
+    parser.add_argument("--hidden_size", type=int, default=128,
+                        help="Number of hidden units in feedforward network.")
 
     args = parser.parse_args()
     return args

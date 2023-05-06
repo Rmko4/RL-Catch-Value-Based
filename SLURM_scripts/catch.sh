@@ -16,4 +16,16 @@ cp -r ~/Deep-Reinforcement-Learning/ $TMPDIR
 # cd to working directory (repo)
 cd $TMPDIR/Deep-Reinforcement-Learning/
 
-python train_agent.py
+python train_agent.py \
+--run_name train \
+--max_steps 20000 \
+--batch_size 32 \
+--learning_rate 0.001 \
+--gamma 0.99 \
+--epsilon_start 1.0 \
+--epsilon_end 0.01 \
+--epsilon_decay_rate 2000 \
+--buffer_capacity 2000 \
+--replay_warmup_steps 10 \
+--target_net_update_freq 200 \
+--hidden_size 32
