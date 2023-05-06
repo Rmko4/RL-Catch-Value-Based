@@ -27,6 +27,8 @@ def get_args():
                         help="Number of steps between target network updates")
     parser.add_argument("--soft_update_tau", type=float, default=1e-3,
                         help="Tau for soft target network updates")
+    parser.add_argument("--double_q_learning", action="store_true",
+                        help="Whether to use double Q-learning")
     parser.add_argument("--hidden_size", type=int, default=128,
                         help="Number of hidden units in feedforward network.")
     parser.add_argument("--n_filters", type=int, default=32,

@@ -52,8 +52,8 @@ class CatchRLModule(LightningModule):
         self.agent = QNetworkAgent(
             self.env, self.Q_network, self.replay_buffer, epsilon_schedule)
 
-        self.update_target_network = self.target_update_fn
-        self.compute_next_Q = self.compute_next_Q_fn
+        self.update_target_network = self.target_update_fn()
+        self.compute_next_Q = self.compute_next_Q_fn()
 
         self.hard_update_target_network()
 
