@@ -28,4 +28,5 @@ python train_agent.py \
 --buffer_capacity 5000 \
 --replay_warmup_steps 10 \
 --target_net_update_freq 50 \
---hidden_size 8
+--hidden_size 8 \
+--n_filters 32

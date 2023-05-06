@@ -11,8 +11,8 @@ class DeepQNetwork(nn.Module):
     def __init__(self,
                  n_actions: int = 3,
                  state_shape: Tuple[int] = DEFAULT_STATE_SHAPE,
-                 hidden_size: int = 32,
-                 n_filters: int = 8
+                 hidden_size: int = 128,
+                 n_filters: int = 32
                  ) -> None:
         super().__init__()
 
@@ -24,7 +24,7 @@ class DeepQNetwork(nn.Module):
 
         f1 = n_filters
         f2 = 2*n_filters
-        
+
         self.net = nn.Sequential(
             nn.Conv2d(state_shape[0], f1, kernel_size=8, stride=4),
             nn.ReLU(),

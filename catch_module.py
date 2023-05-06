@@ -25,6 +25,7 @@ class CatchRLModule(LightningModule):
                  replay_warmup_steps: int = 10,
                  target_net_update_freq: int = 100,
                  hidden_size: int = 128,
+                 n_filters: int = 32,
                  *args: Any,
                  **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -37,8 +38,8 @@ class CatchRLModule(LightningModule):
         state_shape = self.env.state_shape()
 
         # Initialize networks
-        self.Q_network = DeepQNetwork(n_actions, state_shape)
-        self.target_Q_network = DeepQNetwork(n_actions, state_shape)
+        self.Q_network = DeepQNetwork(n_actions, state_shape, hidden_size, n_filters)
+        self.target_Q_network = DeepQNetwork(n_actions, state_shape, hidden_size, n_filters)
 
         # Initialize replay buffer and agent
         self.replay_buffer = ReplayBuffer(capacity=buffer_capacity)

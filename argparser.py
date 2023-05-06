@@ -27,6 +27,8 @@ def get_args():
                         help="Number of steps between target network updates")
     parser.add_argument("--hidden_size", type=int, default=128,
                         help="Number of hidden units in feedforward network.")
+    parser.add_argument("--n_filters", type=int, default=32,
+                        help="Number of filters in convolutional network.")
 
     args = parser.parse_args()
     return args
