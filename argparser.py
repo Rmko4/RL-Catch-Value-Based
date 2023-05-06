@@ -16,7 +16,7 @@ def get_args():
                         help="Initial epsilon")
     parser.add_argument("--epsilon_end", type=float, default=0.01,
                         help="Final epsilon")
-    parser.add_argument("--epsilon_decay_steps", type=float, default=1000,
+    parser.add_argument("--epsilon_decay_rate", type=float, default=1000,
                         help="Number of steps to decay epsilon over")
     parser.add_argument("--buffer_capacity", type=int, default=1000,
                         help="Capacity of replay buffer")

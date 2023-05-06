@@ -10,7 +10,19 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": false
+            "justMyCode": false,
+            "args": [
+                "--run_name", "train",
+                "--batch_size", "32",
+                "--learning_rate", "0.0001",
+                "--gamma", "0.99",
+                "--epsilon_start", "1.0",
+                "--epsilon_end", "0.01",
+                "--epsilon_decay_rate", "1000",
+                "--buffer_capacity", "1000",
+                "--replay_warmup_steps", "10",
+                "--target_net_update_freq", "50"
+            ]
         }
     ]
 }

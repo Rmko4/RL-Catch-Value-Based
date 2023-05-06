@@ -86,15 +86,15 @@ class CatchRLModule(LightningModule):
         # Logging
         self.episode_reward += reward
 
-        self.log('epsilon', self.agent.epsilon, on_step=True, on_epoch=False, prog_bar=True)
-        self.log_dict({'train_loss': loss,
-                       'step': self.global_step,
+        self.log('epsilon', self.agent.epsilon, on_step=True, on_epoch=False, prog_bar=False)
+        self.log('train_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log_dict({'step': self.global_step,
                        'episode': self.episode,
-                       }, on_step=True, on_epoch=False, prog_bar=True)
+                       }, on_step=True, on_epoch=False, prog_bar=False)
 
         if terminal:
             self.log("episode reward", self.episode_reward,
-                     on_step=True, on_epoch=False, prog_bar=True)
+                     on_step=True, on_epoch=True, prog_bar=True)
             self.episode += 1
             self.episode_reward = 0
 

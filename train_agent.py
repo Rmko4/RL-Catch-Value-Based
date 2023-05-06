@@ -12,16 +12,22 @@ from catch_module import CatchRLModule
 PROJECT_NAME = "RL-Catch"
 LOGS_DIR = Path("logs/")
 
+
 def train(hparams):
-    logger = WandbLogger(name=hparams.run_name, 
+    logger = WandbLogger(name=hparams.run_name,
                          project=PROJECT_NAME,
                          save_dir=LOGS_DIR,
-                        log_model=True,)
+                         log_model=True,
+                         anonymous="allow",)
     csv_logger = CSVLogger(save_dir=LOGS_DIR)
 
-    catch_module = CatchRLModule(**vars(hparams))
+    hparams: dict = vars(hparams)
+    hparams.pop('run_name')
+
+    catch_module = CatchRLModule(**hparams)
     trainer = Trainer(max_steps=1e4,
                       logger=[logger, csv_logger],
+                      log_every_n_steps=1,
                       )
     trainer.fit(catch_module)
 

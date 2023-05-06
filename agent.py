@@ -59,7 +59,7 @@ class QNetworkAgent:
 
         # Take the greedy action according to the Q-network
         state = torch.tensor(
-            [self.state], dtype=torch.float32, device=self.device)
+            np.array([self.state]), dtype=torch.float32, device=self.device)
         Q_values = self.Q_network(state)
         return torch.argmax(Q_values).item()
 
