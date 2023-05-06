@@ -23,9 +23,10 @@ def train(hparams):
 
     hparams: dict = vars(hparams)
     hparams.pop('run_name')
+    max_steps = hparams.pop('max_steps')
 
     catch_module = CatchRLModule(**hparams)
-    trainer = Trainer(max_steps=1e4,
+    trainer = Trainer(max_steps=max_steps,
                       logger=[logger, csv_logger],
                       log_every_n_steps=1,
                       )

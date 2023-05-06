@@ -5,7 +5,8 @@ def get_args():
 
     parser.add_argument("--run_name", type=str, default="train",
                         help="Name of the run")
-
+    parser.add_argument("--max_steps", type=int, default=50000,
+                        help="Maximum number of steps to train for")
     parser.add_argument("--batch_size", type=int, default=32,
                         help="Batch size for training")
     parser.add_argument("--learning_rate", type=float, default=1e-3,
@@ -20,7 +21,7 @@ def get_args():
                         help="Number of steps to decay epsilon over")
     parser.add_argument("--buffer_capacity", type=int, default=1000,
                         help="Capacity of replay buffer")
-    parser.add_argument("--replay_warmup_steps", type=int, default=10,
+    parser.add_argument("--replay_warmup_steps", type=int, default=100,
                         help="Number of steps to warm up replay buffer")
     parser.add_argument("--target_net_update_freq", type=int, default=100,
                         help="Number of steps between target network updates")
