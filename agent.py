@@ -23,8 +23,6 @@ class QNetworkAgent:
         self.replay_buffer = replay_buffer
         self.epsilon_schedule = epsilon_schedule
 
-        self.device = next(Q_network.parameters()).device
-
         self.global_step = 0
         self.reset()
 
@@ -59,13 +57,16 @@ class QNetworkAgent:
 
         # Take the greedy action according to the Q-network
         state = torch.tensor(
-            np.array([self.state]), dtype=torch.float32, device=self.device)
+            np.array([self.state]), dtype=torch.float32, device=self._get_device())
         Q_values = self.Q_network(state)
         return torch.argmax(Q_values).item()
 
     def _convert_state(self, state: np.ndarray) -> np.ndarray:
         # Frame dim first (revert transpose)
         return np.transpose(state, (2, 0, 1)).astype(np.float32)
+    
+    def _get_device(self):
+        return next(self.Q_network.parameters()).device
 
     def _update_epsilon(self):
         self.epsilon = self.epsilon_schedule(self.global_step)
