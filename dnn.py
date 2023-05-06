@@ -19,11 +19,11 @@ class DeepQNetwork(nn.Module):
         def _out_size(size):
             return (size - 28) // 8
 
-        flatten_input_size = 64 * \
-            _out_size(state_shape[1]) * _out_size(state_shape[2])
-
         f1 = n_filters
         f2 = 2*n_filters
+
+        flatten_input_size = f2 * \
+            _out_size(state_shape[1]) * _out_size(state_shape[2])
 
         self.net = nn.Sequential(
             nn.Conv2d(state_shape[0], f1, kernel_size=8, stride=4),

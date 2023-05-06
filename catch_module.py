@@ -38,8 +38,10 @@ class CatchRLModule(LightningModule):
         state_shape = self.env.state_shape()
 
         # Initialize networks
-        self.Q_network = DeepQNetwork(n_actions, state_shape, hidden_size, n_filters)
-        self.target_Q_network = DeepQNetwork(n_actions, state_shape, hidden_size, n_filters)
+        self.Q_network = DeepQNetwork(
+            n_actions, state_shape, hidden_size, n_filters)
+        self.target_Q_network = DeepQNetwork(
+            n_actions, state_shape, hidden_size, n_filters)
 
         # Initialize replay buffer and agent
         self.replay_buffer = ReplayBuffer(capacity=buffer_capacity)
@@ -87,8 +89,10 @@ class CatchRLModule(LightningModule):
         # Logging
         self.episode_reward += reward
 
-        self.log('epsilon', self.agent.epsilon, on_step=True, on_epoch=False, prog_bar=False)
-        self.log('train_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log('epsilon', self.agent.epsilon, on_step=True,
+                 on_epoch=False, prog_bar=False)
+        self.log('train_loss', loss, on_step=False,
+                 on_epoch=True, prog_bar=True)
         self.log_dict({'step': self.global_step,
                        'episode': self.episode,
                        }, on_step=True, on_epoch=False, prog_bar=True)
