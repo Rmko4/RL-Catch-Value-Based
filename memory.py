@@ -1,7 +1,7 @@
 import random
 from collections import deque
 from collections.abc import Iterator
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Tuple
 
 import numpy as np
 from torch import Tensor
@@ -19,50 +19,72 @@ class Trajectory(NamedTuple):
 
 class ReplayBuffer:
     def __init__(self, capacity: int) -> None:
-        # Class does not extend deque to expose only the required methods
-        self.buffer = deque(maxlen=capacity)
+        self.capacity = capacity
+        self.buffer = []
+        self.index = 0
 
     def __len__(self) -> int:
         return len(self.buffer)
 
     def append(self, trajectory: Trajectory) -> None:
-        self.buffer.append(trajectory)
+        if len(self.buffer) < self.capacity:
+            self.buffer.append(trajectory)
+        else:
+            self.buffer[self.index] = trajectory
+        self.index = (self.index + 1) % self.capacity
 
+    # TODO: Consider output type
+    def sample(self, batch_size: int, *args, **kwargs) -> List[Trajectory]:
+        raise NotImplementedError
+
+    def choice(self) -> Trajectory:
+        raise NotImplementedError
+
+
+class UniformReplayBuffer(ReplayBuffer):
     def sample(self, batch_size: int) -> List[Trajectory]:
         return random.sample(self.buffer, batch_size)
 
     def choice(self) -> Trajectory:
         return random.choice(self.buffer)
 
-class ReplayBufferFastAccess:
-    def __init__(self, capacity: int) -> None:
-        self.capacity = capacity
-        self.buffer = [None] * capacity
-        self.index = 0
-        self.size = 0
-
-    def __len__(self) -> int:
-        return self.size
-
-    def append(self, trajectory: Trajectory) -> None:
-        self.buffer[self.index] = trajectory
-        self.index = (self.index + 1) % self.capacity
-        self.size = min(self.size + 1, self.capacity)
-
-    def sample(self, batch_size: int) -> List[Trajectory]:
-        if self.size < batch_size:
-            return []
-        indices = random.sample(range(self.size), batch_size)
-        return [self.buffer[i] for i in indices]
-
-    def choice(self) -> Trajectory:
-        if self.size == 0:
-            return None
-        index = random.randint(0, self.size - 1)
-        return self.buffer[index]
 
 class PrioritizedReplayBuffer(ReplayBuffer):
-    pass
+    def __init__(self, capacity: int, alpha: float = 0.6, beta: float = 0.4) -> None:
+        super().__init__(capacity)
+
+        self.priorities = np.zeros(capacity, dtype=np.float32)
+        self.p = np.zeros(capacity, dtype=np.float32)
+        self.weights = np.zeros(capacity, dtype=np.float32)
+        self.alpha = alpha
+        self.beta = beta
+
+    # TODO: Consider appending while trajectory is still to be updated.
+    def append(self, trajectory: Trajectory) -> None:
+        self.priorities[self.index] = self.priorities.max() \
+            if self.buffer else 1.0
+        super().append(trajectory)
+
+    def sample(self, batch_size: int) -> Tuple[List[Trajectory], np.ndarray, np.ndarray]:
+        indices = np.random.choice(len(self.buffer), batch_size, p=self.p)
+        weights = self.weights[indices]
+        trajectories = [self.buffer[i] for i in indices]
+        return trajectories, indices, weights
+
+    def choice(self) -> Tuple[Trajectory, int, float]:
+        index = np.random.choice(len(self.buffer), p=self.p)
+        return self.buffer[index], index, self.weights[index]
+
+    def update_priorities(self, indices: np.ndarray, priorities: np.ndarray) -> None:
+        self.priorities[indices] = priorities
+        self._recompute_weights()
+
+    def _recompute_weights(self) -> None:
+        p = self.priorities[:len(self.buffer)] ** self.alpha
+        self.p /= p.sum()
+        self.weights[:len(self.buffer)] = (
+            len(self.buffer) * p) ** (-self.beta)
+        self.weights /= self.weights.max()
 
 
 class ReplayBufferDataset(IterableDataset):
