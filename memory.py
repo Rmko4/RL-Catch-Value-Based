@@ -17,7 +17,7 @@ class Trajectory(NamedTuple):
     terminal: bool | Tensor
 
 
-class ReplayBuffer():
+class ReplayBufferSlow:
     def __init__(self, capacity: int) -> None:
         # Class does not extend deque to expose only the required methods
         self.buffer = deque(maxlen=capacity)
@@ -34,6 +34,32 @@ class ReplayBuffer():
     def choice(self) -> Trajectory:
         return random.choice(self.buffer)
 
+class ReplayBuffer:
+    def __init__(self, capacity: int) -> None:
+        self.capacity = capacity
+        self.buffer = [None] * capacity
+        self.index = 0
+        self.size = 0
+
+    def __len__(self) -> int:
+        return self.size
+
+    def append(self, trajectory: Trajectory) -> None:
+        self.buffer[self.index] = trajectory
+        self.index = (self.index + 1) % self.capacity
+        self.size = min(self.size + 1, self.capacity)
+
+    def sample(self, batch_size: int) -> List[Trajectory]:
+        if self.size < batch_size:
+            return []
+        indices = random.sample(range(self.size), batch_size)
+        return [self.buffer[i] for i in indices]
+
+    def choice(self) -> Trajectory:
+        if self.size == 0:
+            return None
+        index = random.randint(0, self.size - 1)
+        return self.buffer[index]
 
 class PrioritizedReplayBuffer(ReplayBuffer):
     pass

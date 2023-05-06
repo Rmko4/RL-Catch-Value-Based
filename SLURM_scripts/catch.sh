@@ -25,8 +25,8 @@ python train_agent.py \
 --epsilon_start 1.0 \
 --epsilon_end 0.01 \
 --epsilon_decay_rate 2000 \
---buffer_capacity 1000 \
+--buffer_capacity 10000 \
 --replay_warmup_steps 10 \
 --target_net_update_freq 50 \
---hidden_size 32 \
---n_filters 16
+--hidden_size 256 \
+--n_filters 8
