@@ -79,6 +79,7 @@ class CatchRLModule(LightningModule):
     def swap_networks(self):
         self.Q_network, self.target_Q_network = \
             self.target_Q_network, self.Q_network
+        self.agent.Q_network = self.Q_network
 
     def scheduled_update(self, fn: Callable):
         def scheduled_fn():
