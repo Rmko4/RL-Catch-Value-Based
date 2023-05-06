@@ -2,7 +2,7 @@
 #SBATCH --time=2:00:00
 #SBATCH --gpus-per-node=a100.20gb:1
 #SBATCH --job-name=RL-Catch
-#SBATCH --mem=16GB
+#SBATCH --mem=200GB
 #SBATCH --profile=task
 
 module load Python
@@ -20,12 +20,12 @@ python train_agent.py \
 --run_name train \
 --max_steps 20000 \
 --batch_size 32 \
---learning_rate 0.001 \
+--learning_rate 0.0005 \
 --gamma 0.99 \
 --epsilon_start 1.0 \
 --epsilon_end 0.01 \
 --epsilon_decay_rate 2000 \
---buffer_capacity 2000 \
+--buffer_capacity 5000 \
 --replay_warmup_steps 10 \
---target_net_update_freq 200 \
---hidden_size 32
+--target_net_update_freq 50 \
+--hidden_size 8

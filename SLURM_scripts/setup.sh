@@ -6,4 +6,4 @@ cd ~/Deep-Reinforcement-Learning
 source ~/envs/drlenv/bin/activate
 pip install -r requirements.txt
 
-srun --partition=gpushort --gpus-per-node=a100.20gb:1 --mem=16GB --time=3:00:00 --job-name=RL-Catch --pty /bin/bash
+srun --partition=gpushort --gpus-per-node=a100.20gb:1 --mem=200GB --time=3:00:00 --job-name=RL-Catch --pty /bin/bash
