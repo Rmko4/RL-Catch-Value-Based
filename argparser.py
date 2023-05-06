@@ -23,12 +23,15 @@ def get_args():
                         help="Capacity of replay buffer")
     parser.add_argument("--replay_warmup_steps", type=int, default=100,
                         help="Number of steps to warm up replay buffer")
-    parser.add_argument("--target_net_update_freq", type=int, default=100,
+    parser.add_argument("--target_net_update_freq", type=int, default=None,
                         help="Number of steps between target network updates")
+    parser.add_argument("--soft_update_tau", type=float, default=1e-3,
+                        help="Tau for soft target network updates")
     parser.add_argument("--hidden_size", type=int, default=128,
                         help="Number of hidden units in feedforward network.")
     parser.add_argument("--n_filters", type=int, default=32,
                         help="Number of filters in convolutional network.")
+    
 
     args = parser.parse_args()
     return args

@@ -17,7 +17,7 @@ class Trajectory(NamedTuple):
     terminal: bool | Tensor
 
 
-class ReplayBufferSlow:
+class ReplayBuffer:
     def __init__(self, capacity: int) -> None:
         # Class does not extend deque to expose only the required methods
         self.buffer = deque(maxlen=capacity)
@@ -34,7 +34,7 @@ class ReplayBufferSlow:
     def choice(self) -> Trajectory:
         return random.choice(self.buffer)
 
-class ReplayBuffer:
+class ReplayBufferFastAccess:
     def __init__(self, capacity: int) -> None:
         self.capacity = capacity
         self.buffer = [None] * capacity

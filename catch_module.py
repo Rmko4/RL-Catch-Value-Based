@@ -23,7 +23,8 @@ class CatchRLModule(LightningModule):
                  epsilon_decay_rate: float = 1000,
                  buffer_capacity: int = 1000,
                  replay_warmup_steps: int = 10,
-                 target_net_update_freq: int = 100,
+                 target_net_update_freq: int = None,
+                 soft_update_tau: float = 1e-3,
                  hidden_size: int = 128,
                  n_filters: int = 32,
                  *args: Any,
@@ -50,6 +51,11 @@ class CatchRLModule(LightningModule):
         self.agent = QNetworkAgent(
             self.env, self.Q_network, self.replay_buffer, epsilon_schedule)
 
+        self.update_target_network = self.scheduled_update_target_network \
+            if target_net_update_freq else self.soft_update_target_network
+        
+        self.hard_update_target_network()
+
         self.loss = nn.MSELoss()
         self.episode = 0
         self.episode_reward = 0
@@ -61,10 +67,24 @@ class CatchRLModule(LightningModule):
         for _ in range(self.hparams.replay_warmup_steps):
             self.agent.step()
 
-    def update_target_network(self):
-        # TODO: Add soft update with parameter tau
+    def hard_update_target_network(self):
         # Copy the weights from Q_network to target_Q_network
         self.target_Q_network.load_state_dict(self.Q_network.state_dict())
+
+    def scheduled_update_target_network(self):
+        if self.global_step % self.hparams.target_net_update_freq == 0:
+            self.hard_update_target_network()
+
+    def soft_update_target_network(self):
+        Q_net_state = self.Q_network.state_dict()
+        target_net_state = self.target_Q_network.state_dict()
+
+        tau = self.hparams.soft_update_tau
+        for key in Q_net_state:
+            target_net_state[key] = Q_net_state[key] * \
+                tau + target_net_state[key]*(1-tau)
+
+        self.target_Q_network.load_state_dict(target_net_state)
 
     @torch.no_grad()
     def compute_td_target(self, batch: Trajectory) -> Tensor:
@@ -82,9 +102,8 @@ class CatchRLModule(LightningModule):
             dim=-1, index=batch.action.unsqueeze(-1)).squeeze(-1)
 
         loss = self.loss(Q_values, td_target)
-
-        if self.global_step % self.hparams.target_net_update_freq == 0:
-            self.update_target_network()
+        
+        self.update_target_network()
 
         # Logging
         self.episode_reward += reward
