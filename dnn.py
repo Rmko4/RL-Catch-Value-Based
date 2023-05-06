@@ -5,7 +5,7 @@ from torch import nn, Tensor
 DEFAULT_STATE_SHAPE = (84, 84, 4)
 
 
-class ConvBackbone(nn.module):
+class ConvBackbone(nn.Module):
     def __init__(self,
                  state_shape: Tuple[int] = DEFAULT_STATE_SHAPE,
                  n_filters: int = 32
@@ -28,7 +28,7 @@ class ConvBackbone(nn.module):
             nn.ReLU(),
             nn.Conv2d(f2, f2, kernel_size=3, stride=1),
             nn.ReLU(),
-            nn.Flatten(),
+            nn.Flatten()
         )
 
     def forward(self, x: Tensor) -> Tensor:

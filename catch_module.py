@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 
 from agent import QNetworkAgent
 from catch import CatchEnv
-from dnn import DeepQNetwork
+from dnn import DeepQNetwork, DuelingDQN
 from memory import ReplayBuffer, ReplayBufferDataset, Trajectory
 from scheduler import EpsilonDecay
 
@@ -26,6 +26,7 @@ class CatchRLModule(LightningModule):
                  target_net_update_freq: int = None,
                  soft_update_tau: float = 1e-3,
                  double_q_learning: bool = False,
+                 dueling_architecture: bool = False,
                  hidden_size: int = 128,
                  n_filters: int = 32,
                  *args: Any,
@@ -39,10 +40,12 @@ class CatchRLModule(LightningModule):
         n_actions = self.env.get_num_actions()
         state_shape = self.env.state_shape()
 
+        Q_net_cls = DuelingDQN if dueling_architecture else DeepQNetwork
+
         # Initialize networks
-        self.Q_network = DeepQNetwork(
+        self.Q_network = Q_net_cls(
             n_actions, state_shape, hidden_size, n_filters)
-        self.target_Q_network = DeepQNetwork(
+        self.target_Q_network = Q_net_cls(
             n_actions, state_shape, hidden_size, n_filters)
 
         # Initialize replay buffer and agent

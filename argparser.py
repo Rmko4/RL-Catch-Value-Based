@@ -29,10 +29,13 @@ def get_args():
                         help="Tau for soft target network updates")
     parser.add_argument("--double_q_learning", action="store_true",
                         help="Whether to use double Q-learning")
+    parser.add_argument("--dueling_architecture", action="store_true",
+                        help="Whether to use dueling architecture.")
     parser.add_argument("--hidden_size", type=int, default=128,
                         help="Number of hidden units in feedforward network.")
     parser.add_argument("--n_filters", type=int, default=32,
                         help="Number of filters in convolutional network.")
+    
     
 
     args = parser.parse_args()
