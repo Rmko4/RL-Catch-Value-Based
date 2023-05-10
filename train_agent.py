@@ -8,6 +8,7 @@ from pytorch_lightning.loggers import CSVLogger, WandbLogger
 
 from argparser import get_args
 from catch_module import CatchRLModule
+from video_logger import VideoLoggerCallback
 
 PROJECT_NAME = "RL-Catch"
 LOGS_DIR = Path("logs/")
@@ -21,6 +22,10 @@ def train(hparams):
                          anonymous="allow",)
     csv_logger = CSVLogger(save_dir=LOGS_DIR)
 
+    video_logger_callback = VideoLoggerCallback()
+
+    callbacks = [video_logger_callback]
+
     hparams: dict = vars(hparams)
     hparams.pop('run_name')
     max_steps = hparams.pop('max_steps')
@@ -29,6 +34,7 @@ def train(hparams):
     trainer = Trainer(max_steps=max_steps,
                       logger=[logger, csv_logger],
                       log_every_n_steps=1,
+                      callbacks=callbacks,
                       )
     trainer.fit(catch_module)
 
