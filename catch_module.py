@@ -148,10 +148,11 @@ class CatchRLModule(LightningModule):
         if not self.hparams.prioritized_replay:
             loss = self.loss(Q_values, td_target)
         else:
-            errors = td_target - Q_values
+            errors: Tensor = td_target - Q_values
             loss = (errors ** 2 * weights).mean()
 
-            priorities = errors.abs().detach().cpu().numpy() + 1e-6
+            priorities = errors.abs() + 1e-6
+            priorities.detach().cpu().numpy()
             self.replay_buffer.update_priorities(indices, priorities)
 
         self.update_target_network()
