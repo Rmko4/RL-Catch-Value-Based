@@ -1,10 +1,16 @@
 import argparse
 
+
 def get_args():
     parser = argparse.ArgumentParser(description="Training agent on Catch")
 
     parser.add_argument("--run_name", type=str, default="train",
                         help="Name of the run")
+    parser.add_argument("--algorithm", type=str, default="DQN",
+                        choices=["DQN", "Dueling_architecture", "DQV_max"],
+                        help="Type of algorithm to use for training")
+    parser.add_argument("--log_video", action="store_true",
+                        help="Whether to log video of agent's performance")
     parser.add_argument("--max_steps", type=int, default=50000,
                         help="Maximum number of steps to train for")
     parser.add_argument("--batch_size", type=int, default=32,
@@ -35,14 +41,12 @@ def get_args():
                         help="Tau for soft target network updates")
     parser.add_argument("--double_q_learning", action="store_true",
                         help="Whether to use double Q-learning")
-    parser.add_argument("--dueling_architecture", action="store_true",
-                        help="Whether to use dueling architecture.")
+    # parser.add_argument("--dueling_architecture", action="store_true",
+    #                     help="Whether to use dueling architecture.")
     parser.add_argument("--hidden_size", type=int, default=128,
                         help="Number of hidden units in feedforward network.")
     parser.add_argument("--n_filters", type=int, default=32,
                         help="Number of filters in convolutional network.")
-    
-    
 
     args = parser.parse_args()
     return args

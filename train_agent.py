@@ -22,13 +22,14 @@ def train(hparams):
                          anonymous="allow",)
     csv_logger = CSVLogger(save_dir=LOGS_DIR)
 
-    video_logger_callback = VideoLoggerCallback()
-
-    callbacks = [video_logger_callback]
-
     hparams: dict = vars(hparams)
     hparams.pop('run_name')
     max_steps = hparams.pop('max_steps')
+    log_video = hparams.pop('log_video')
+
+    callbacks = []
+    if log_video:
+        callbacks.append(VideoLoggerCallback())
 
     catch_module = CatchRLModule(**hparams)
     trainer = Trainer(max_steps=max_steps,

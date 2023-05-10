@@ -88,9 +88,28 @@ class DeepQNetwork(nn.Module):
         return self.ff(x)
 
 
-class DuelingDQN(nn.Module):
-    pass
+class DeepVNetwork(nn.Module):
+    def __init__(self,
+                 state_shape: Tuple[int] = DEFAULT_STATE_SHAPE,
+                 hidden_size: int = 128,
+                 n_filters: int = 32
+                 ) -> None:
+        super().__init__()
 
+        self.conv = ConvBackbone(state_shape, n_filters)
+
+        self.ff = nn.Sequential(
+            nn.Linear(self.conv.output_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, 1)
+        )
+
+    def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
+        x = self.conv(x)
+        return self.ff(x)
+
+
+class DuelingDQN(nn.Module):
     def __init__(self,
                  n_actions: int = 3,
                  state_shape: Tuple[int] = DEFAULT_STATE_SHAPE,

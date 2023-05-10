@@ -31,4 +31,4 @@ python train_agent.py \
 --hidden_size 256 \
 --n_filters 16 \
 --double_q_learning \
---dueling_architecture
+--algorithm DQV_max

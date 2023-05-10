@@ -7,7 +7,6 @@ import numpy as np
 import wandb
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback
-from pytorch_lightning.loggers import WandbLogger
 
 from catch_module import CatchRLModule
 

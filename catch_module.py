@@ -1,7 +1,7 @@
 from typing import Any, Callable
-from numpy import indices
 
 import torch
+from numpy import indices
 from pytorch_lightning import LightningModule
 from torch import Tensor, nn
 from torch.optim import Adam, Optimizer, RMSprop
@@ -9,16 +9,22 @@ from torch.utils.data import DataLoader
 
 from agent import QNetworkAgent
 from catch import CatchEnv
-from dnn import DeepQNetwork, DuelingDQN
-from memory import PRIORITIZED_TRAJECTORY, UniformReplayBuffer, \
-    PrioritizedReplayBuffer, ReplayBufferDataset, Trajectory
+from dnn import DeepVNetwork, DeepQNetwork, DuelingDQN
+from memory import (PRIORITIZED_TRAJECTORY, PrioritizedReplayBuffer,
+                    ReplayBufferDataset, Trajectory, UniformReplayBuffer)
 from scheduler import EpsilonDecay
+
+MODES = {'DQN': DeepQNetwork,
+         'Dueling_architecture': DuelingDQN,
+         'DQV_max': DeepQNetwork}
 
 
 class CatchRLModule(LightningModule):
     def __init__(self,
-                 batch_size: int = 32,
                  episodes_per_epoch: int = 10,
+                 algorithm: str = 'DQN',
+                 double_q_learning: bool = False,
+                 batch_size: int = 32,
                  learning_rate: float = 1e-3,
                  gamma: float = 0.99,
                  epsilon_start: float = 0.1,
@@ -31,8 +37,6 @@ class CatchRLModule(LightningModule):
                  prioritized_replay_beta: float = 0.4,
                  target_net_update_freq: int = None,
                  soft_update_tau: float = 1e-3,
-                 double_q_learning: bool = False,
-                 dueling_architecture: bool = False,
                  hidden_size: int = 128,
                  n_filters: int = 32,
                  *args: Any,
@@ -46,15 +50,18 @@ class CatchRLModule(LightningModule):
         n_actions = self.env.get_num_actions()
         state_shape = self.env.state_shape()
 
-        Q_net_cls = DuelingDQN if dueling_architecture else DeepQNetwork
+        Q_net_cls = MODES[algorithm]
 
         # Initialize networks
         self.Q_network = Q_net_cls(
             n_actions, state_shape, hidden_size, n_filters)
         self.target_Q_network = Q_net_cls(
             n_actions, state_shape, hidden_size, n_filters)
+        
+        if algorithm == 'DQV_max':
+            self.V_network = DeepVNetwork(state_shape, hidden_size, n_filters)
 
-        # Initialize replay buffer and agent
+        # Initialize replay buffer
         if prioritized_replay:
             self.replay_buffer = PrioritizedReplayBuffer(
                 capacity=buffer_capacity,
@@ -62,6 +69,7 @@ class CatchRLModule(LightningModule):
                 beta=prioritized_replay_beta)
         else:
             self.replay_buffer = UniformReplayBuffer(capacity=buffer_capacity)
+
         epsilon_schedule = EpsilonDecay(
             epsilon_start, epsilon_end, epsilon_decay_rate)
         self.agent = QNetworkAgent(
@@ -136,10 +144,17 @@ class CatchRLModule(LightningModule):
         return Q_values
 
     @torch.no_grad()
-    def compute_td_target(self, batch: Trajectory) -> Tensor:
+    def compute_td_target_Q(self, batch: Trajectory) -> Tensor:
         Q_values = self.compute_next_Q(batch)
         Q_values[batch.terminal] = 0.  # Terminal state has 0 Q-value
         td_target = batch.reward + self.hparams.gamma * Q_values
+        return td_target
+    
+    @torch.no_grad()
+    def compute_td_target_V(self, batch: Trajectory) -> Tensor:
+        V_values = self.V_network(batch.next_state)
+        V_values[batch.terminal] = 0.
+        td_target = batch.reward + self.hparams.gamma * V_values
         return td_target
 
     def training_step(self, batch: Trajectory | PRIORITIZED_TRAJECTORY, batch_idx: int) -> Tensor:
@@ -148,21 +163,31 @@ class CatchRLModule(LightningModule):
         if self.hparams.prioritized_replay:
             batch, indices, weights = batch
 
-        td_target = self.compute_td_target(batch)
+        td_target_Q = self.compute_td_target_Q(batch)
+        
         # Unsqueeze to get (batch_size, 1) shape
         Q_values = self.Q_network(batch.state).gather(
             dim=-1, index=batch.action.unsqueeze(-1)).squeeze(-1)
 
-        if not self.hparams.prioritized_replay:
-            loss = self.loss(Q_values, td_target)
-        else:
-            errors: Tensor = td_target - Q_values
-            loss = (errors ** 2 * weights).mean()
+        if self.hparams.algorithm == 'DQV_max':
+            V_values = self.V_network(batch.state)
+            td_target_V = self.compute_td_target_V(batch)
 
-            priorities = errors.abs() + 1e-6
-            priorities = priorities.detach().cpu().numpy()
-            indices = indices.detach().cpu().numpy()
-            self.replay_buffer.update_priorities(indices, priorities)
+            loss_V = self.loss(V_values, td_target_Q)
+            loss_Q = self.loss(Q_values, td_target_V)
+
+            loss = loss_V + loss_Q
+        else:
+            if not self.hparams.prioritized_replay:
+                loss = self.loss(Q_values, td_target_Q)
+            else:
+                errors: Tensor = td_target_Q - Q_values
+                loss = (errors ** 2 * weights).mean()
+
+                priorities = errors.abs() + 1e-6
+                priorities = priorities.detach().cpu().numpy()
+                indices = indices.detach().cpu().numpy()
+                self.replay_buffer.update_priorities(indices, priorities)
 
         self.update_target_network()
 
