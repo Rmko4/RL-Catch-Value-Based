@@ -153,7 +153,7 @@ class CatchRLModule(LightningModule):
 
     @torch.no_grad()
     def compute_td_target_V(self, batch: Trajectory) -> Tensor:
-        V_values = self.V_network(batch.next_state)
+        V_values = self.V_network(batch.next_state).squeeze()
         V_values[batch.terminal] = 0.
         td_target = batch.reward + self.hparams.gamma * V_values
         return td_target

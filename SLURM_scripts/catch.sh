@@ -27,7 +27,7 @@ python train_agent.py \
 --epsilon_decay_rate 1000 \
 --buffer_capacity 5000 \
 --replay_warmup_steps 10 \
---target_net_update_freq 500000 \
+--target_net_update_freq 50000 \
 --hidden_size 128 \
 --n_filters 16 \
 --algorithm DQV_max \
