@@ -31,7 +31,4 @@ python train_agent.py \
 --hidden_size 128 \
 --n_filters 16 \
 --double_q_learning \
---dueling_architecture \
---prioritized_replay \
---prioritized_replay_alpha 0.2 \
---prioritized_replay_beta 0.4
+--dueling_architecture

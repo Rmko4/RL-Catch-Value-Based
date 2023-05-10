@@ -18,6 +18,7 @@ from scheduler import EpsilonDecay
 class CatchRLModule(LightningModule):
     def __init__(self,
                  batch_size: int = 32,
+                 episodes_per_epoch: int = 10,
                  learning_rate: float = 1e-3,
                  gamma: float = 0.99,
                  epsilon_start: float = 0.1,
@@ -80,7 +81,7 @@ class CatchRLModule(LightningModule):
 
     def replay_warmup(self):
         for _ in range(self.hparams.replay_warmup_steps):
-            self.agent.step()
+            self.agent.step(freeze_time=True, epsilon=1.)
 
     def target_update_fn(self) -> Callable:
         # if self.hparams.double_q_learning:
@@ -181,30 +182,29 @@ class CatchRLModule(LightningModule):
                      on_step=True, on_epoch=True, prog_bar=True)
             self.episode += 1
             self.episode_reward = 0
-            if self.episode % 10 == 0:
-                self.run_test()
+            if self.episode % self.hparams.episodes_per_epoch == 0:
+                self.dataset.end()
 
         return loss
 
-    def run_test(self):
+    def on_train_epoch_end(self) -> None:
         total_reward = 0
         self.agent.reset()
 
         for epoch in range(10):
             terminal = False
             while not terminal:
-                reward, terminal = self.agent.step()
+                reward, terminal = self.agent.step(freeze_time=True, epsilon=0.)
                 total_reward += reward
         
-        self.log("test/total_reward", total_reward, on_step=True, on_epoch=False, prog_bar=True)
+        self.log("test/total_reward", total_reward, on_epoch=True, prog_bar=True)
 
     def train_dataloader(self) -> DataLoader:
         # First call
         if len(self.replay_buffer) < self.hparams.replay_warmup_steps:
             self.replay_warmup()
-        dataset = ReplayBufferDataset(
-            self.replay_buffer, 100*self.hparams.batch_size)
-        return DataLoader(dataset, batch_size=self.hparams.batch_size)
+        self.dataset = ReplayBufferDataset(self.replay_buffer)
+        return DataLoader(self.dataset, batch_size=self.hparams.batch_size)
 
     def configure_optimizers(self) -> Optimizer:
         # Only the Q-network's parameters are optimized
