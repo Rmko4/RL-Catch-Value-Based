@@ -20,7 +20,7 @@ python train_agent.py \
 --run_name train \
 --max_steps 20000 \
 --batch_size 32 \
---learning_rate 0.001 \
+--learning_rate 0.0005 \
 --gamma 0.99 \
 --epsilon_start 1.0 \
 --epsilon_end 0.01 \
