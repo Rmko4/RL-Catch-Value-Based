@@ -8,7 +8,6 @@ import numpy as np
 from torch import Tensor
 from torch.utils.data import IterableDataset
 
-
 class Trajectory(NamedTuple):
     # Using typing.NamedTuple
     state: np.ndarray | Tensor
@@ -52,6 +51,7 @@ class UniformReplayBuffer(ReplayBuffer):
         return random.choice(self.buffer)
 
 
+PRIORITIZED_TRAJECTORY = Tuple[Trajectory, int, float]
 class PrioritizedReplayBuffer(ReplayBuffer):
     def __init__(self, capacity: int, alpha: float = 0.6, beta: float = 0.4) -> None:
         super().__init__(capacity)
@@ -67,6 +67,7 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         self.priorities[self.index] = self.priorities.max() \
             if self.buffer else 1.0
         super().append(trajectory)
+        self._recompute_weights()
 
     def sample(self, batch_size: int) -> Tuple[List[Trajectory], np.ndarray, np.ndarray]:
         indices = np.random.choice(len(self.buffer), batch_size, p=self.p)
@@ -74,8 +75,8 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         trajectories = [self.buffer[i] for i in indices]
         return trajectories, indices, weights
 
-    def choice(self) -> Tuple[Trajectory, int, float]:
-        index = np.random.choice(len(self.buffer), p=self.p)
+    def choice(self) -> PRIORITIZED_TRAJECTORY:
+        index = np.random.choice(len(self.buffer), p=self.p[:len(self.buffer)])
         return self.buffer[index], index, self.weights[index]
 
     def update_priorities(self, indices: np.ndarray, priorities: np.ndarray) -> None:
@@ -83,10 +84,11 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         self._recompute_weights()
 
     def _recompute_weights(self) -> None:
-        p = self.priorities[:len(self.buffer)] ** self.alpha
-        self.p /= p.sum()
-        self.weights[:len(self.buffer)] = (
-            len(self.buffer) * p) ** (-self.beta)
+        N = len(self.buffer)
+        p = self.priorities[:N] ** self.alpha
+        self.p[:N] = p / p.sum()
+        self.weights[:N] = (
+            N * p) ** (-self.beta)
         self.weights /= self.weights.max()
 
 
@@ -99,7 +101,7 @@ class ReplayBufferDataset(IterableDataset):
         self.replay_buffer = replay_buffer
         self.epoch_length = epoch_length
 
-    def __iter__(self) -> Iterator[Trajectory]:
+    def __iter__(self) -> Iterator[Trajectory | PRIORITIZED_TRAJECTORY]:
         for _ in range(self.epoch_length):
             yield self.replay_buffer.choice()
 

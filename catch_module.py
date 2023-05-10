@@ -1,4 +1,5 @@
 from typing import Any, Callable
+from numpy import indices
 
 import torch
 from pytorch_lightning import LightningModule
@@ -9,7 +10,8 @@ from torch.utils.data import DataLoader
 from agent import QNetworkAgent
 from catch import CatchEnv
 from dnn import DeepQNetwork, DuelingDQN
-from memory import UniformReplayBuffer, ReplayBufferDataset, Trajectory
+from memory import PRIORITIZED_TRAJECTORY, UniformReplayBuffer, \
+    PrioritizedReplayBuffer, ReplayBufferDataset, Trajectory
 from scheduler import EpsilonDecay
 
 
@@ -23,6 +25,7 @@ class CatchRLModule(LightningModule):
                  epsilon_decay_rate: float = 1000,
                  buffer_capacity: int = 1000,
                  replay_warmup_steps: int = 10,
+                 prioritized_replay: bool = False,
                  target_net_update_freq: int = None,
                  soft_update_tau: float = 1e-3,
                  double_q_learning: bool = False,
@@ -41,6 +44,7 @@ class CatchRLModule(LightningModule):
         state_shape = self.env.state_shape()
 
         Q_net_cls = DuelingDQN if dueling_architecture else DeepQNetwork
+        replay_buffer_cls = PrioritizedReplayBuffer if prioritized_replay else UniformReplayBuffer
 
         # Initialize networks
         self.Q_network = Q_net_cls(
@@ -49,7 +53,7 @@ class CatchRLModule(LightningModule):
             n_actions, state_shape, hidden_size, n_filters)
 
         # Initialize replay buffer and agent
-        self.replay_buffer = UniformReplayBuffer(capacity=buffer_capacity)
+        self.replay_buffer = replay_buffer_cls(capacity=buffer_capacity)
         epsilon_schedule = EpsilonDecay(
             epsilon_start, epsilon_end, epsilon_decay_rate)
         self.agent = QNetworkAgent(
@@ -130,15 +134,25 @@ class CatchRLModule(LightningModule):
         td_target = batch.reward + self.hparams.gamma * Q_values
         return td_target
 
-    def training_step(self, batch: Trajectory, batch_idx: int) -> Tensor:
+    def training_step(self, batch: Trajectory | PRIORITIZED_TRAJECTORY, batch_idx: int) -> Tensor:
         reward, terminal = self.agent.step()
+
+        if self.hparams.prioritized_replay:
+            batch, indices, weights = batch
 
         td_target = self.compute_td_target(batch)
         # Unsqueeze to get (batch_size, 1) shape
         Q_values = self.Q_network(batch.state).gather(
             dim=-1, index=batch.action.unsqueeze(-1)).squeeze(-1)
 
-        loss = self.loss(Q_values, td_target)
+        if not self.hparams.prioritized_replay:
+            loss = self.loss(Q_values, td_target)
+        else:
+            errors = td_target - Q_values
+            loss = (errors ** 2 * weights).mean()
+
+            priorities = errors.abs().detach().cpu().numpy() + 1e-6
+            self.replay_buffer.update_priorities(indices, priorities)
 
         self.update_target_network()
 
@@ -165,7 +179,8 @@ class CatchRLModule(LightningModule):
         # First call
         if len(self.replay_buffer) < self.hparams.replay_warmup_steps:
             self.replay_warmup()
-        dataset = ReplayBufferDataset(self.replay_buffer)
+        dataset = ReplayBufferDataset(
+            self.replay_buffer, 100*self.hparams.batch_size)
         return DataLoader(dataset, batch_size=self.hparams.batch_size)
 
     def configure_optimizers(self) -> Optimizer:

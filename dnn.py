@@ -57,7 +57,7 @@ class ConvBackbone(nn.Module):
             nn.ReLU(),
             nn.Conv2d(f1, f2, kernel_size=3, stride=1),
             nn.ReLU(),
-            nn.Conv2d(f1, f2, kernel_size=3, stride=1),
+            nn.Conv2d(f2, f2, kernel_size=3, stride=1),
             nn.ReLU(),
             nn.Flatten()
         )

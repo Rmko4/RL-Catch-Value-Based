@@ -23,6 +23,8 @@ def get_args():
                         help="Capacity of replay buffer")
     parser.add_argument("--replay_warmup_steps", type=int, default=100,
                         help="Number of steps to warm up replay buffer")
+    parser.add_argument("--prioritized_replay", action="store_true",
+                        help="Whether to use prioritized replay")
     parser.add_argument("--target_net_update_freq", type=int, default=None,
                         help="Number of steps between target network updates")
     parser.add_argument("--soft_update_tau", type=float, default=1e-3,
