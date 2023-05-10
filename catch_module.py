@@ -171,7 +171,7 @@ class CatchRLModule(LightningModule):
             dim=-1, index=batch.action.unsqueeze(-1)).squeeze(-1)
 
         if self.hparams.algorithm == 'DQV_max':
-            V_values = self.V_network(batch.state)
+            V_values = self.V_network(batch.state).squeeze()
             td_target_V = self.compute_td_target_V(batch)
 
             loss_V = self.loss(V_values, td_target_Q)

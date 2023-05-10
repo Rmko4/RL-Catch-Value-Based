@@ -27,9 +27,8 @@ python train_agent.py \
 --epsilon_decay_rate 1000 \
 --buffer_capacity 5000 \
 --replay_warmup_steps 10 \
---target_net_update_freq 100 \
---hidden_size 256 \
+--target_net_update_freq 500000 \
+--hidden_size 128 \
 --n_filters 16 \
---double_q_learning \
 --algorithm DQV_max \
 --log_video
