@@ -181,8 +181,22 @@ class CatchRLModule(LightningModule):
                      on_step=True, on_epoch=True, prog_bar=True)
             self.episode += 1
             self.episode_reward = 0
+            if self.episode % 10 == 0:
+                self.run_test()
 
         return loss
+
+    def run_test(self):
+        total_reward = 0
+        self.agent.reset()
+
+        for epoch in range(10):
+            terminal = False
+            while not terminal:
+                reward, terminal = self.agent.step()
+                total_reward += reward
+        
+        self.log("test/total_reward", total_reward, on_step=True, on_epoch=False, prog_bar=True)
 
     def train_dataloader(self) -> DataLoader:
         # First call

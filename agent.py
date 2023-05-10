@@ -30,10 +30,12 @@ class QNetworkAgent:
         self.state = self._convert_state(self.env.reset())
 
     @torch.no_grad()
-    def step(self) -> Tuple[float, bool]:
+    def step(self,
+             freeze_time: bool = False,
+             epsilon: float | None = None) -> Tuple[float, bool]:
         self._update_epsilon()
 
-        action = self._sample_action()
+        action = self._sample_action(epsilon)
         next_state, reward, terminal = self.env.step(action)
 
         next_state = self._convert_state(next_state)
@@ -46,13 +48,15 @@ class QNetworkAgent:
         if terminal:
             self.reset()
 
-        self.global_step += 1
+        if not freeze_time:
+            self.global_step += 1
 
         return reward, terminal
 
-    def _sample_action(self) -> int:
+    def _sample_action(self, epsilon: float | None = None) -> int:
+        epsilon = epsilon if epsilon else self.epsilon
         # Take a random action with probability epsilon
-        if random.random() < self.epsilon:
+        if random.random() < epsilon:
             return random.randint(0, self.env.get_num_actions() - 1)
 
         # Take the greedy action according to the Q-network
@@ -64,7 +68,7 @@ class QNetworkAgent:
     def _convert_state(self, state: np.ndarray) -> np.ndarray:
         # Frame dim first (revert transpose)
         return np.transpose(state, (2, 0, 1)).astype(np.float32)
-    
+
     def _get_device(self):
         return next(self.Q_network.parameters()).device
 
