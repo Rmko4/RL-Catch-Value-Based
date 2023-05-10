@@ -27,7 +27,7 @@ python train_agent.py \
 --epsilon_decay_rate 1000 \
 --buffer_capacity 5000 \
 --replay_warmup_steps 10 \
---soft_update_tau 0.01 \
+--soft_update_tau 0.05 \
 --hidden_size 128 \
 --n_filters 16 \
 --double_q_learning \

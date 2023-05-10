@@ -26,6 +26,8 @@ class CatchRLModule(LightningModule):
                  buffer_capacity: int = 1000,
                  replay_warmup_steps: int = 10,
                  prioritized_replay: bool = False,
+                 prioritized_replay_alpha: float = 0.6,
+                 prioritized_replay_beta: float = 0.4,
                  target_net_update_freq: int = None,
                  soft_update_tau: float = 1e-3,
                  double_q_learning: bool = False,
@@ -44,7 +46,6 @@ class CatchRLModule(LightningModule):
         state_shape = self.env.state_shape()
 
         Q_net_cls = DuelingDQN if dueling_architecture else DeepQNetwork
-        replay_buffer_cls = PrioritizedReplayBuffer if prioritized_replay else UniformReplayBuffer
 
         # Initialize networks
         self.Q_network = Q_net_cls(
@@ -53,7 +54,13 @@ class CatchRLModule(LightningModule):
             n_actions, state_shape, hidden_size, n_filters)
 
         # Initialize replay buffer and agent
-        self.replay_buffer = replay_buffer_cls(capacity=buffer_capacity)
+        if prioritized_replay:
+            self.replay_buffer = PrioritizedReplayBuffer(
+                capacity=buffer_capacity,
+                alpha=prioritized_replay_alpha,
+                beta=prioritized_replay_beta)
+        else:
+            self.replay_buffer = UniformReplayBuffer(capacity=buffer_capacity)
         epsilon_schedule = EpsilonDecay(
             epsilon_start, epsilon_end, epsilon_decay_rate)
         self.agent = QNetworkAgent(
