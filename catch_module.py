@@ -176,6 +176,9 @@ class CatchRLModule(LightningModule):
             loss_V = self.loss(V_values, td_target_Q)
             loss_Q = self.loss(Q_values, td_target_V)
 
+            self.log('train/loss_V', loss_V, on_step=True, on_epoch=False)
+            self.log('train/loss_Q', loss_Q, on_step=True, on_epoch=False)
+
             loss = loss_V + loss_Q
         else:
             if not self.hparams.prioritized_replay:
@@ -196,7 +199,7 @@ class CatchRLModule(LightningModule):
 
         self.log('epsilon', self.agent.epsilon, on_step=True,
                  on_epoch=False, prog_bar=False)
-        self.log('train_loss', loss, on_step=False,
+        self.log('train/loss', loss, on_step=False,
                  on_epoch=True, prog_bar=True)
         self.log_dict({'step': self.global_step,
                        'episode': self.episode,
@@ -204,7 +207,7 @@ class CatchRLModule(LightningModule):
 
         if terminal:
             self.log("episode reward", self.episode_reward,
-                     on_step=True, on_epoch=True, prog_bar=True)
+                     on_step=True, on_epoch=True, prog_bar=False)
             self.episode += 1
             self.episode_reward = 0
             if self.episode % self.hparams.episodes_per_epoch == 0:
