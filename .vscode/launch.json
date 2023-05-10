@@ -26,8 +26,8 @@
                 "--hidden_size", "256",
                 "--n_filters", "16",
                 "--double_q_learning",
-                "--algorithm", "DQV_max",
-                "--log_video"
+                "--algorithm", "DQV_max"
+                // "--log_video"
             ]
         }
     ]
