@@ -19,7 +19,7 @@ cd $TMPDIR/Deep-Reinforcement-Learning/
 python train_agent.py \
 --run_name train \
 --max_steps 20000 \
---batch_size 64 \
+--batch_size 32 \
 --learning_rate 0.002 \
 --gamma 0.99 \
 --epsilon_start 1.0 \
@@ -28,7 +28,7 @@ python train_agent.py \
 --buffer_capacity 5000 \
 --replay_warmup_steps 10 \
 --soft_update_tau 0.01 \
---hidden_size 128 \
+--hidden_size 32 \
 --n_filters 16 \
 --double_q_learning \
 --algorithm DQV_max \

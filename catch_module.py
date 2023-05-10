@@ -176,8 +176,8 @@ class CatchRLModule(LightningModule):
             loss_V = self.loss(V_values, td_target_Q)
             loss_Q = self.loss(Q_values, td_target_V)
 
-            self.log('train/loss_V', loss_V, on_step=True, on_epoch=False)
-            self.log('train/loss_Q', loss_Q, on_step=True, on_epoch=False)
+            self.log('train/loss_V', loss_V, on_step=False, on_epoch=True)
+            self.log('train/loss_Q', loss_Q, on_step=False, on_epoch=True)
 
             loss = loss_V + loss_Q
         else:
