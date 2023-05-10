@@ -60,7 +60,7 @@ class CatchRLModule(LightningModule):
 
         if algorithm == 'DQV_max':
             self.V_network = DeepVNetwork(state_shape, hidden_size, n_filters)
-            self.V_optimizer = Adam(self.V_network.parameters(), lr=learning_rate)
+            # self.V_optimizer = Adam(self.V_network.parameters(), lr=learning_rate)
 
         # Initialize replay buffer
         if prioritized_replay:
@@ -180,11 +180,11 @@ class CatchRLModule(LightningModule):
             self.log('train/loss_V', loss_V, on_step=False, on_epoch=True)
             self.log('train/loss_Q', loss_Q, on_step=False, on_epoch=True)
 
-            self.V_optimizer.zero_grad()
-            loss_V.backward()
-            self.V_optimizer.step()
+            # self.V_optimizer.zero_grad()
+            # loss_V.backward()
+            # self.V_optimizer.step()
  
-            loss = loss_Q
+            loss = loss_Q + loss_V
         else:
             if not self.hparams.prioritized_replay:
                 loss = self.loss(Q_values, td_target_Q)
@@ -243,9 +243,9 @@ class CatchRLModule(LightningModule):
 
     def configure_optimizers(self) -> Optimizer:
     # Both Q-network and V-network parameters are optimized
-        # if self.hparams.algorithm == 'DQV_max':
-        #     params = list(self.Q_network.parameters()) + list(self.V_network.parameters())
-        #     return Adam(params, lr=self.hparams.learning_rate)
+        if self.hparams.algorithm == 'DQV_max':
+            params = list(self.Q_network.parameters()) + list(self.V_network.parameters())
+            return Adam(params, lr=self.hparams.learning_rate)
         
         # Only the Q-network's parameters are optimized
         return Adam(self.Q_network.parameters(), lr=self.hparams.learning_rate)
