@@ -2,6 +2,7 @@ import random
 from collections import deque
 from collections.abc import Iterator
 from typing import List, NamedTuple, Tuple
+from abc import ABC, abstractmethod
 
 import numpy as np
 from torch import Tensor
@@ -17,7 +18,7 @@ class Trajectory(NamedTuple):
     terminal: bool | Tensor
 
 
-class ReplayBuffer:
+class ReplayBuffer(ABC):
     def __init__(self, capacity: int) -> None:
         self.capacity = capacity
         self.buffer = []
@@ -33,10 +34,12 @@ class ReplayBuffer:
             self.buffer[self.index] = trajectory
         self.index = (self.index + 1) % self.capacity
 
+    @abstractmethod
     # TODO: Consider output type
     def sample(self, batch_size: int, *args, **kwargs) -> List[Trajectory]:
-        raise NotImplementedError
+        pass
 
+    @abstractmethod
     def choice(self) -> Trajectory:
         raise NotImplementedError
 
@@ -103,7 +106,7 @@ class ReplayBufferDataset(IterableDataset):
 
 def main():
     from torch.utils.data import DataLoader
-    buffer = ReplayBuffer(10)
+    buffer = UniformReplayBuffer(10)
     for i in range(10):
         buffer.append(Trajectory(i, i, i, i, False))
     dataset = ReplayBufferDataset(buffer)

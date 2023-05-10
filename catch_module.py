@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from agent import QNetworkAgent
 from catch import CatchEnv
 from dnn import DeepQNetwork, DuelingDQN
-from memory import ReplayBuffer, ReplayBufferDataset, Trajectory
+from memory import UniformReplayBuffer, ReplayBufferDataset, Trajectory
 from scheduler import EpsilonDecay
 
 
@@ -49,7 +49,7 @@ class CatchRLModule(LightningModule):
             n_actions, state_shape, hidden_size, n_filters)
 
         # Initialize replay buffer and agent
-        self.replay_buffer = ReplayBuffer(capacity=buffer_capacity)
+        self.replay_buffer = UniformReplayBuffer(capacity=buffer_capacity)
         epsilon_schedule = EpsilonDecay(
             epsilon_start, epsilon_end, epsilon_decay_rate)
         self.agent = QNetworkAgent(
