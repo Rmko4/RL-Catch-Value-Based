@@ -152,7 +152,8 @@ class CatchRLModule(LightningModule):
             loss = (errors ** 2 * weights).mean()
 
             priorities = errors.abs() + 1e-6
-            priorities.detach().cpu().numpy()
+            priorities = priorities.detach().cpu().numpy()
+            indices = indices.detach().cpu().numpy()
             self.replay_buffer.update_priorities(indices, priorities)
 
         self.update_target_network()
