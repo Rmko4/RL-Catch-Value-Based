@@ -7,7 +7,7 @@ def get_args():
     parser.add_argument("--run_name", type=str, default="train",
                         help="Name of the run")
     parser.add_argument("--algorithm", type=str, default="DQN",
-                        choices=["DQN", "Dueling_architecture", "DQV_max"],
+                        choices=["DQN", "Dueling_architecture", "DQV", "DQV_max"],
                         help="Type of algorithm to use for training")
     parser.add_argument("--log_video", action="store_true",
                         help="Whether to log video of agent's performance")

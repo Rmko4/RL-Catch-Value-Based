@@ -22,7 +22,7 @@ python train_agent.py \
 --batch_size 64 \
 --learning_rate 0.001 \
 --gamma 0.99 \
---epsilon_start 1.0 \
+--epsilon_start 0.5 \
 --epsilon_end 0.01 \
 --epsilon_decay_rate 1000 \
 --buffer_capacity 10000 \
@@ -30,5 +30,5 @@ python train_agent.py \
 --soft_update_tau 0.1 \
 --hidden_size 128 \
 --n_filters 16 \
---algorithm DQV_max \
+--algorithm DQV \
 --log_video

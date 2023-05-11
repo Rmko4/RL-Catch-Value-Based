@@ -16,7 +16,10 @@ from scheduler import EpsilonDecay
 
 MODES = {'DQN': DeepQNetwork,
          'Dueling_architecture': DuelingDQN,
+         'DQV': DeepQNetwork,
          'DQV_max': DeepQNetwork}
+
+DQV_FAMILY = ['DQV', 'DQV_max']
 
 
 class CatchRLModule(LightningModule):
@@ -55,10 +58,11 @@ class CatchRLModule(LightningModule):
         # Initialize networks
         self.Q_network: nn.Module = Q_net_cls(
             n_actions, state_shape, hidden_size, n_filters)
-        self.target_Q_network: nn.Module = Q_net_cls(
-            n_actions, state_shape, hidden_size, n_filters)
+        if not algorithm == 'DQV_max':
+            self.target_Q_network: nn.Module = Q_net_cls(
+                n_actions, state_shape, hidden_size, n_filters)
 
-        if algorithm == 'DQV_max':
+        if algorithm in DQV_FAMILY:
             self.V_network = DeepVNetwork(state_shape, hidden_size, n_filters)
             # self.V_optimizer = Adam(self.V_network.parameters(), lr=learning_rate)
 
@@ -164,27 +168,33 @@ class CatchRLModule(LightningModule):
         if self.hparams.prioritized_replay:
             batch, indices, weights = batch
 
-        td_target_Q = self.compute_td_target_Q(batch)
+        if not self.hparams.algorithm == 'DQV_max':
+            td_target_Q = self.compute_td_target_Q(batch)
 
         # Unsqueeze to get (batch_size, 1) shape
         Q_values = self.Q_network(batch.state).gather(
             dim=-1, index=batch.action.unsqueeze(-1)).squeeze(-1)
 
-        if self.hparams.algorithm == 'DQV_max':
-            V_values = self.V_network(batch.state).squeeze()
-            td_target_V = self.compute_td_target_V(batch)
+        alg = self.hparams.algorithm
+        if alg in DQV_FAMILY:
+            if alg == 'DQV':
+                V_values = self.V_network(batch.state).squeeze()
+                td_target_V = self.compute_td_target_V(batch)
 
-            loss_V = self.loss(V_values, td_target_Q)
-            loss_Q = self.loss(Q_values, td_target_V)
+                loss_V = self.loss(V_values, td_target_V)
+                loss_Q = self.loss(Q_values, td_target_V)
+            else: # DQV_max
+                V_values = self.V_network(batch.state).squeeze()
+                td_target_V = self.compute_td_target_V(batch)
+
+                loss_V = self.loss(V_values, td_target_Q)
+                loss_Q = self.loss(Q_values, td_target_V)
 
             self.log('train/loss_V', loss_V, on_step=False, on_epoch=True)
             self.log('train/loss_Q', loss_Q, on_step=False, on_epoch=True)
 
-            # self.V_optimizer.zero_grad()
-            # loss_V.backward()
-            # self.V_optimizer.step()
- 
             loss = loss_Q + loss_V
+            
         else:
             if not self.hparams.prioritized_replay:
                 loss = self.loss(Q_values, td_target_Q)
