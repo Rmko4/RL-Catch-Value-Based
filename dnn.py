@@ -43,7 +43,7 @@ class ConvBackbone(nn.Module):
         super().__init__()
 
         def _out_size(size):
-            return (size - 44) // 8
+            return (size - 60) // 8
 
         f1 = n_filters
         f2 = 2*n_filters
@@ -56,6 +56,8 @@ class ConvBackbone(nn.Module):
             nn.Conv2d(state_shape[0], f1, kernel_size=5, stride=2),
             nn.ReLU(),
             nn.Conv2d(f1, f2, kernel_size=3, stride=1),
+            nn.ReLU(),
+            nn.Conv2d(f2, f2, kernel_size=3, stride=1),
             nn.ReLU(),
             nn.Conv2d(f2, f2, kernel_size=3, stride=1),
             nn.ReLU(),
