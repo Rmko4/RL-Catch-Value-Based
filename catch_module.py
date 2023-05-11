@@ -1,7 +1,6 @@
 from typing import Any, Callable
 
 import torch
-from numpy import indices
 from pytorch_lightning import LightningModule
 from torch import Tensor, nn
 from torch.optim import Adam, Optimizer, RMSprop
@@ -12,6 +11,7 @@ from catch import CatchEnv
 from dnn import DeepVNetwork, DeepQNetwork, DuelingDQN
 from memory import (PRIORITIZED_TRAJECTORY, PrioritizedReplayBuffer,
                     ReplayBufferDataset, Trajectory, UniformReplayBuffer)
+from network_update import NetUpdater
 from scheduler import EpsilonDecay
 
 MODES = {'DQN': DeepQNetwork,
@@ -53,18 +53,22 @@ class CatchRLModule(LightningModule):
         n_actions = self.env.get_num_actions()
         state_shape = self.env.state_shape()
 
+        self.algorithm = algorithm
         Q_net_cls = MODES[algorithm]
 
-        # Initialize networks
+        # Initialize Q-networks
         self.Q_network: nn.Module = Q_net_cls(
             n_actions, state_shape, hidden_size, n_filters)
-        if not algorithm == 'DQV_max':
+        if not algorithm == 'DQV':
             self.target_Q_network: nn.Module = Q_net_cls(
                 n_actions, state_shape, hidden_size, n_filters)
 
+        # Initialize V-networks
         if algorithm in DQV_FAMILY:
             self.V_network = DeepVNetwork(state_shape, hidden_size, n_filters)
-            # self.V_optimizer = Adam(self.V_network.parameters(), lr=learning_rate)
+            if algorithm == 'DQV':
+                self.target_V_network = DeepVNetwork(
+                    state_shape, hidden_size, n_filters)
 
         # Initialize replay buffer
         if prioritized_replay:
@@ -83,11 +87,15 @@ class CatchRLModule(LightningModule):
         self.update_target_network = self.target_update_fn()
         self.compute_next_Q = self.compute_next_Q_fn()
 
-        self.hard_update_target_network()
-
         self.loss = nn.MSELoss()
         self.episode = 0
         self.episode_reward = 0
+
+    def compute_next_Q(self):
+        raise NotImplementedError
+
+    def update_target_network(self):
+        raise NotImplementedError
 
     def forward(self, x):
         return self.Q_network(x)
@@ -97,38 +105,19 @@ class CatchRLModule(LightningModule):
             self.agent.step(freeze_time=True, epsilon=1.)
 
     def target_update_fn(self) -> Callable:
-        # if self.hparams.double_q_learning:
-        #     return self.scheduled_update(self.swap_networks)
+        if self.algorithm != 'DQV':
+            policy_net = self.Q_network
+            target_net = self.target_Q_network
+        else:
+            policy_net = self.V_network
+            target_net = self.target_V_network
         # Presence of target_net_update_freq indicates hard update
-        if self.hparams.target_net_update_freq:
-            return self.scheduled_update(self.hard_update_target_network)
-        return self.soft_update_target_network
-
-    def swap_networks(self):
-        self.Q_network, self.target_Q_network = \
-            self.target_Q_network, self.Q_network
-        self.agent.Q_network = self.Q_network
-
-    def scheduled_update(self, fn: Callable):
-        def scheduled_fn():
-            if self.global_step % self.hparams.target_net_update_freq == 0:
-                fn()
-        return scheduled_fn
-
-    def hard_update_target_network(self):
-        # Copy the weights from Q_network to target_Q_network
-        self.target_Q_network.load_state_dict(self.Q_network.state_dict())
-
-    def soft_update_target_network(self):
-        Q_net_state = self.Q_network.state_dict()
-        target_net_state = self.target_Q_network.state_dict()
-
-        tau = self.hparams.soft_update_tau
-        for key in Q_net_state:
-            target_net_state[key] = Q_net_state[key]*tau + \
-                target_net_state[key]*(1 - tau)
-
-        self.target_Q_network.load_state_dict(target_net_state)
+        soft_update = self.hparams.target_net_update_freq is None
+        return NetUpdater(policy_net,
+                          target_net,
+                          soft_update,
+                          update_freq=self.hparams.target_net_update_freq,
+                          soft_update_tau=self.hparams.soft_update_tau).update
 
     def compute_next_Q_fn(self) -> Callable:
         if self.hparams.double_q_learning:
@@ -168,14 +157,14 @@ class CatchRLModule(LightningModule):
         if self.hparams.prioritized_replay:
             batch, indices, weights = batch
 
-        if not self.hparams.algorithm == 'DQV_max':
+        alg = self.hparams.algorithm
+        if alg != 'DQV':
             td_target_Q = self.compute_td_target_Q(batch)
 
         # Unsqueeze to get (batch_size, 1) shape
         Q_values = self.Q_network(batch.state).gather(
             dim=-1, index=batch.action.unsqueeze(-1)).squeeze(-1)
 
-        alg = self.hparams.algorithm
         if alg in DQV_FAMILY:
             if alg == 'DQV':
                 V_values = self.V_network(batch.state).squeeze()
@@ -183,7 +172,7 @@ class CatchRLModule(LightningModule):
 
                 loss_V = self.loss(V_values, td_target_V)
                 loss_Q = self.loss(Q_values, td_target_V)
-            else: # DQV_max
+            else:  # DQV_max
                 V_values = self.V_network(batch.state).squeeze()
                 td_target_V = self.compute_td_target_V(batch)
 
@@ -194,7 +183,7 @@ class CatchRLModule(LightningModule):
             self.log('train/loss_Q', loss_Q, on_step=False, on_epoch=True)
 
             loss = loss_Q + loss_V
-            
+
         else:
             if not self.hparams.prioritized_replay:
                 loss = self.loss(Q_values, td_target_Q)
@@ -252,11 +241,11 @@ class CatchRLModule(LightningModule):
         return DataLoader(self.dataset, batch_size=self.hparams.batch_size)
 
     def configure_optimizers(self) -> Optimizer:
-    # Both Q-network and V-network parameters are optimized
-        if self.hparams.algorithm == 'DQV_max':
-            params = list(self.Q_network.parameters()) + list(self.V_network.parameters())
+        # Both Q-network and V-network parameters are optimized
+        if self.algorithm in DQV_FAMILY:
+            params = list(self.Q_network.parameters()) + \
+                list(self.V_network.parameters())
             return Adam(params, lr=self.hparams.learning_rate)
-        
+
         # Only the Q-network's parameters are optimized
         return Adam(self.Q_network.parameters(), lr=self.hparams.learning_rate)
-
