@@ -30,5 +30,4 @@ python train_agent.py \
 --soft_update_tau 0.05 \
 --hidden_size 128 \
 --n_filters 16 \
---algorithm DQV \
---log_video
+--algorithm DQV
