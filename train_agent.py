@@ -24,7 +24,7 @@ def train(hparams):
 
     hparams: dict = vars(hparams)
     hparams.pop('run_name')
-    max_steps = hparams.pop('max_steps')
+    max_epochs = hparams.pop('max_epochs')
     log_video = hparams.pop('log_video')
 
     callbacks = []
@@ -32,7 +32,7 @@ def train(hparams):
         callbacks.append(VideoLoggerCallback())
 
     catch_module = CatchRLModule(**hparams)
-    trainer = Trainer(max_steps=max_steps,
+    trainer = Trainer(max_epochs=max_epochs,
                       logger=[logger, csv_logger],
                       log_every_n_steps=1,
                       callbacks=callbacks,

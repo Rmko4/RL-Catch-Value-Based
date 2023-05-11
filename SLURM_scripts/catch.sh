@@ -18,7 +18,7 @@ cd $TMPDIR/Deep-Reinforcement-Learning/
 
 python train_agent.py \
 --run_name train \
---max_steps 20000 \
+--max_epochs 100 \
 --batch_size 64 \
 --learning_rate 0.001 \
 --gamma 0.99 \

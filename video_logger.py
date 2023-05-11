@@ -45,11 +45,11 @@ def writeGIF(history: List[np.ndarray],
         frames.append(write_frame)
 
     # Save the frames as an animated GIF
-    imageio.mimsave(output_file, frames, fps=4)
+    imageio.mimsave(output_file, frames, duration=250)
 
 
 class VideoLoggerCallback(Callback):
-    def __init__(self, save_every_n_epochs=10) -> None:
+    def __init__(self, save_every_n_epochs=5) -> None:
         self.interval = save_every_n_epochs
         self.epoch = 0
 
@@ -69,6 +69,8 @@ class VideoLoggerCallback(Callback):
             _, terminal = agent.step(
                 freeze_time=True, epsilon=0.)
             history.append(agent.env.image.copy())
+            
+        history.append(agent.env.image.copy())
 
         writeGIF(history, str(VIDEO_PATH))
 

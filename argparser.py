@@ -11,7 +11,7 @@ def get_args():
                         help="Type of algorithm to use for training")
     parser.add_argument("--log_video", action="store_true",
                         help="Whether to log video of agent's performance")
-    parser.add_argument("--max_steps", type=int, default=50000,
+    parser.add_argument("--max_epochs", type=int, default=100,
                         help="Maximum number of steps to train for")
     parser.add_argument("--batch_size", type=int, default=32,
                         help="Batch size for training")
@@ -41,8 +41,6 @@ def get_args():
                         help="Tau for soft target network updates")
     parser.add_argument("--double_q_learning", action="store_true",
                         help="Whether to use double Q-learning")
-    # parser.add_argument("--dueling_architecture", action="store_true",
-    #                     help="Whether to use dueling architecture.")
     parser.add_argument("--hidden_size", type=int, default=128,
                         help="Number of hidden units in feedforward network.")
     parser.add_argument("--n_filters", type=int, default=32,
