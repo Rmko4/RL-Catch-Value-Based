@@ -97,13 +97,16 @@ class ReplayBufferDataset(IterableDataset):
         Supports random sampling of dynamic replay buffer
     """
 
-    def __init__(self, replay_buffer: ReplayBuffer) -> None:
+    def __init__(self, replay_buffer: ReplayBuffer, batch_size=32) -> None:
         self.replay_buffer = replay_buffer
+        self.batch_size = batch_size
         self.iter = True
 
     def __iter__(self) -> Iterator[Trajectory | PRIORITIZED_TRAJECTORY]:
         while self.iter:
-            yield self.replay_buffer.choice()
+            sample = self.replay_buffer.sample(self.batch_size)
+            for trajectory in sample:
+                yield trajectory
         # Iterator recovers itself after being killed
         self.iter = True
 

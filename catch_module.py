@@ -101,8 +101,13 @@ class CatchRLModule(LightningModule):
         return self.Q_network(x)
 
     def replay_warmup(self):
-        for _ in range(self.hparams.replay_warmup_steps):
-            self.agent.step(freeze_time=True, epsilon=1.)
+        hp = self.hparams
+        warmup_steps = hp.replay_warmup_steps if \
+            hp.replay_warmup_steps > hp.batch_size else hp.batch_size
+        for _ in range(warmup_steps):
+            _, terminal = self.agent.step(freeze_time=True, epsilon=1.)
+            if terminal:
+                self.episode += 1
 
     def target_update_fn(self) -> Callable:
         if self.algorithm != 'DQV':
@@ -237,7 +242,8 @@ class CatchRLModule(LightningModule):
         # First call
         if len(self.replay_buffer) < self.hparams.replay_warmup_steps:
             self.replay_warmup()
-        self.dataset = ReplayBufferDataset(self.replay_buffer)
+        self.dataset = ReplayBufferDataset(
+            self.replay_buffer, self.hparams.batch_size)
         return DataLoader(self.dataset, batch_size=self.hparams.batch_size)
 
     def configure_optimizers(self) -> Optimizer:
