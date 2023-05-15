@@ -28,6 +28,7 @@ class CatchRLModule(LightningModule):
                  algorithm: str = 'DQN',
                  double_q_learning: bool = False,
                  batch_size: int = 32,
+                 batches_per_step: int = 1,
                  learning_rate: float = 1e-3,
                  gamma: float = 0.99,
                  epsilon_start: float = 0.1,
@@ -36,8 +37,8 @@ class CatchRLModule(LightningModule):
                  buffer_capacity: int = 1000,
                  replay_warmup_steps: int = 10,
                  prioritized_replay: bool = False,
-                 prioritized_replay_alpha: float = None,
-                 prioritized_replay_beta: float = None,
+                 prioritized_replay_alpha: float = 0.6,
+                 prioritized_replay_beta: float = 0.4,
                  target_net_update_freq: int = None,
                  soft_update_tau: float = 1e-3,
                  hidden_size: int = 128,
@@ -90,6 +91,7 @@ class CatchRLModule(LightningModule):
         self.loss = nn.MSELoss()
         self.episode = 0
         self.episode_reward = 0
+        self.batch_step = 0
 
     def compute_next_Q(self):
         raise NotImplementedError
@@ -157,7 +159,11 @@ class CatchRLModule(LightningModule):
         return td_target
 
     def training_step(self, batch: Trajectory | PRIORITIZED_TRAJECTORY, batch_idx: int) -> Tensor:
-        reward, terminal = self.agent.step()
+        do_step = self.batch_step % self.hparams.batches_per_step == 0
+        self.batch_step += 1
+        
+        if do_step:
+            reward, terminal = self.agent.step()
 
         if self.hparams.prioritized_replay:
             batch, indices, weights = batch
@@ -204,23 +210,24 @@ class CatchRLModule(LightningModule):
         self.update_target_network()
 
         # Logging
-        self.episode_reward += reward
-
-        self.log('epsilon', self.agent.epsilon, on_step=True,
-                 on_epoch=False, prog_bar=False)
         self.log('train/loss', loss, on_step=False,
-                 on_epoch=True, prog_bar=True)
-        self.log_dict({'step': self.global_step,
-                       'episode': self.episode,
-                       }, on_step=True, on_epoch=False, prog_bar=True)
+                on_epoch=True, prog_bar=True)
+        
+        if do_step:
+            self.episode_reward += reward
+            self.log('epsilon', self.agent.epsilon, on_step=True,
+                        on_epoch=False, prog_bar=False)
+            self.log_dict({'step': self.global_step,
+                            'episode': self.episode,
+                            }, on_step=True, on_epoch=False, prog_bar=True)
 
-        if terminal:
-            self.log("episode reward", self.episode_reward,
-                     on_step=True, on_epoch=True, prog_bar=False)
-            self.episode += 1
-            self.episode_reward = 0
-            if self.episode % self.hparams.episodes_per_epoch == 0:
-                self.dataset.end()
+            if terminal:
+                self.log("episode reward", self.episode_reward,
+                        on_step=True, on_epoch=True, prog_bar=False)
+                self.episode += 1
+                self.episode_reward = 0
+                if self.episode % self.hparams.episodes_per_epoch == 0:
+                    self.dataset.end()
 
         return loss
 

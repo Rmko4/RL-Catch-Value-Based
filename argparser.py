@@ -15,6 +15,8 @@ def get_args():
                         help="Maximum number of steps to train for")
     parser.add_argument("--batch_size", type=int, default=32,
                         help="Batch size for training")
+    parser.add_argument("--batches_per_step", type=int, default=1,
+                        help="Number of batches to sample from replay buffer per agent step")
     parser.add_argument("--learning_rate", type=float, default=1e-3,
                         help="Learning rate for training")
     parser.add_argument("--gamma", type=float, default=0.99,
@@ -31,9 +33,9 @@ def get_args():
                         help="Number of steps to warm up replay buffer")
     parser.add_argument("--prioritized_replay", action="store_true",
                         help="Whether to use prioritized replay")
-    parser.add_argument("--prioritized_replay_alpha", type=float, default=0.6,
+    parser.add_argument("--prioritized_replay_alpha", type=float, default=None,
                         help="Alpha parameter for prioritized replay")
-    parser.add_argument("--prioritized_replay_beta", type=float, default=0.4,
+    parser.add_argument("--prioritized_replay_beta", type=float, default=None,
                         help="Beta parameter for prioritized replay")
     parser.add_argument("--target_net_update_freq", type=int, default=None,
                         help="Number of steps between target network updates")
