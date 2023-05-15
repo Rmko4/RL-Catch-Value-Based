@@ -104,16 +104,11 @@ class CatchRLModule(LightningModule):
 
     def replay_warmup(self):
         hp = self.hparams
-        warmup_steps = hp.replay_warmup_steps if \
-            hp.replay_warmup_steps > hp.batch_size else hp.batch_size
-        warmup_steps -= len(self.replay_buffer)
+        warmup_steps = hp.replay_warmup_steps
         for _ in range(warmup_steps):
             _, terminal = self.agent.step(freeze_time=True, epsilon=1.)
             if terminal:
                 self.episode += 1
-                if self.episode % self.hparams.episodes_per_epoch == 0:
-                    self.dataset.end()
-                    return
 
     def target_update_fn(self) -> Callable:
         if self.algorithm != 'DQV':
@@ -161,13 +156,7 @@ class CatchRLModule(LightningModule):
         V_values[batch.terminal] = 0.
         td_target = batch.reward + self.hparams.gamma * V_values
         return td_target
-
-    def on_train_epoch_start(self) -> None:
-        required_size = max(self.hparams.replay_warmup_steps,
-                            self.hparams.batch_size)
-        if len(self.replay_buffer) < required_size:
-            self.replay_warmup()
-
+    
     def training_step(self, batch: Trajectory | PRIORITIZED_TRAJECTORY, batch_idx: int) -> Tensor:
         do_step = self.batch_step % self.hparams.batches_per_step == 0
         self.batch_step += 1
@@ -259,9 +248,12 @@ class CatchRLModule(LightningModule):
                  on_epoch=True, prog_bar=True)
 
     def train_dataloader(self) -> DataLoader:
-        self.dataset = ReplayBufferDataset(
-            self.replay_buffer, self.hparams.batch_size)
+        # First call
+        if len(self.replay_buffer) < self.hparams.replay_warmup_steps:
+            self.replay_warmup()
+        self.dataset = ReplayBufferDataset(self.replay_buffer)
         return DataLoader(self.dataset, batch_size=self.hparams.batch_size)
+
 
     def configure_optimizers(self) -> Optimizer:
         # Both Q-network and V-network parameters are optimized
