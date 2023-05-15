@@ -5,5 +5,6 @@ opencv-python
 torch
 pytorch-lightning
 wandb
-moviepy # REMOVE if no video recording is needed
-imageio # REMOVE if no video recording is needed
+moviepy
+imageio
+matplotlib
