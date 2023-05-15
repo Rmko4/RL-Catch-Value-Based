@@ -106,10 +106,14 @@ class CatchRLModule(LightningModule):
         hp = self.hparams
         warmup_steps = hp.replay_warmup_steps if \
             hp.replay_warmup_steps > hp.batch_size else hp.batch_size
+        warmup_steps -= len(self.replay_buffer)
         for _ in range(warmup_steps):
             _, terminal = self.agent.step(freeze_time=True, epsilon=1.)
             if terminal:
                 self.episode += 1
+                if self.episode % self.hparams.episodes_per_epoch == 0:
+                    self.dataset.end()
+                    return
 
     def target_update_fn(self) -> Callable:
         if self.algorithm != 'DQV':
@@ -157,6 +161,12 @@ class CatchRLModule(LightningModule):
         V_values[batch.terminal] = 0.
         td_target = batch.reward + self.hparams.gamma * V_values
         return td_target
+
+    def on_train_epoch_start(self) -> None:
+        required_size = max(self.hparams.replay_warmup_steps,
+                            self.hparams.batch_size)
+        if len(self.replay_buffer) < required_size:
+            self.replay_warmup()
 
     def training_step(self, batch: Trajectory | PRIORITIZED_TRAJECTORY, batch_idx: int) -> Tensor:
         do_step = self.batch_step % self.hparams.batches_per_step == 0
@@ -211,19 +221,19 @@ class CatchRLModule(LightningModule):
 
         # Logging
         self.log('train/loss', loss, on_step=False,
-                on_epoch=True, prog_bar=True)
-        
+                 on_epoch=True, prog_bar=True)
+
         if do_step:
             self.episode_reward += reward
             self.log('epsilon', self.agent.epsilon, on_step=True,
-                        on_epoch=False, prog_bar=False)
+                     on_epoch=False, prog_bar=False)
             self.log_dict({'step': self.global_step,
-                            'episode': self.episode,
-                            }, on_step=True, on_epoch=False, prog_bar=True)
+                           'episode': self.episode,
+                           }, on_step=True, on_epoch=False, prog_bar=True)
 
             if terminal:
                 self.log("episode reward", self.episode_reward,
-                        on_step=True, on_epoch=True, prog_bar=False)
+                         on_step=True, on_epoch=True, prog_bar=False)
                 self.episode += 1
                 self.episode_reward = 0
                 if self.episode % self.hparams.episodes_per_epoch == 0:
@@ -232,6 +242,9 @@ class CatchRLModule(LightningModule):
         return loss
 
     def on_train_epoch_end(self) -> None:
+        self.test_epoch()
+
+    def test_epoch(self):
         total_reward = 0
         self.agent.reset()
 
@@ -246,9 +259,6 @@ class CatchRLModule(LightningModule):
                  on_epoch=True, prog_bar=True)
 
     def train_dataloader(self) -> DataLoader:
-        # First call
-        if len(self.replay_buffer) < self.hparams.replay_warmup_steps:
-            self.replay_warmup()
         self.dataset = ReplayBufferDataset(
             self.replay_buffer, self.hparams.batch_size)
         return DataLoader(self.dataset, batch_size=self.hparams.batch_size)
