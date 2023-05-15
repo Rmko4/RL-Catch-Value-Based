@@ -14,7 +14,7 @@ PROJECT_NAME = "RL-Catch"
 LOGS_DIR = Path("logs/")
 
 
-def train(hparams):
+def train(hparams, config=None):
     logger = WandbLogger(name=f"{hparams.run_name}_{hparams.algorithm}",
                          project=PROJECT_NAME,
                          save_dir=LOGS_DIR,
@@ -30,6 +30,8 @@ def train(hparams):
     callbacks = []
     if log_video:
         callbacks.append(VideoLoggerCallback())
+
+    hparams = {**hparams, **config} if config else hparams
 
     catch_module = CatchRLModule(**hparams)
     trainer = Trainer(max_epochs=max_epochs,
