@@ -207,8 +207,7 @@ class CatchRLModule(LightningModule):
                 indices = indices.detach().cpu().numpy()
                 self.replay_buffer.update_priorities(indices, priorities)
 
-        if do_step:
-            self.update_target_network()
+        self.update_target_network()
 
         # Logging
         self.log('train/loss', loss, on_step=False,

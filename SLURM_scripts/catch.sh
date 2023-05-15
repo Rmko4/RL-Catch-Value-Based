@@ -25,10 +25,10 @@ python train_agent.py \
 --gamma 0.99 \
 --epsilon_start 0.5 \
 --epsilon_end 0.01 \
---epsilon_decay_rate 100 \
+--epsilon_decay_rate 50 \
 --buffer_capacity 10000 \
 --replay_warmup_steps 10 \
---soft_update_tau 0.05 \
+--soft_update_tau 0.01 \
 --hidden_size 256 \
 --n_filters 16 \
 --algorithm DQV
