@@ -3,12 +3,12 @@ from typing import Any, Callable
 import torch
 from pytorch_lightning import LightningModule
 from torch import Tensor, nn
-from torch.optim import Adam, Optimizer, RMSprop
+from torch.optim import SGD, Adam, Optimizer, RMSprop
 from torch.utils.data import DataLoader
 
 from agent import QNetworkAgent
 from catch import CatchEnv
-from dnn import DeepVNetwork, DeepQNetwork, DuelingDQN
+from dnn import DeepQNetwork, DeepVNetwork, DuelingDQN
 from memory import (PRIORITIZED_TRAJECTORY, PrioritizedReplayBuffer,
                     ReplayBufferDataset, Trajectory, UniformReplayBuffer)
 from network_update import NetUpdater
@@ -21,6 +21,10 @@ MODES = {'DQN': DeepQNetwork,
 
 DQV_FAMILY = ['DQV', 'DQV_max']
 
+OPTIMIZERS = {'Adam': Adam,
+              'RMSprop': RMSprop,
+              'SGD': SGD}
+
 
 class CatchRLModule(LightningModule):
     def __init__(self,
@@ -29,6 +33,7 @@ class CatchRLModule(LightningModule):
                  double_q_learning: bool = False,
                  batch_size: int = 32,
                  batches_per_step: int = 1,
+                 optimizer: str = 'Adam',
                  learning_rate: float = 1e-3,
                  gamma: float = 0.99,
                  epsilon_start: float = 0.1,
@@ -156,7 +161,7 @@ class CatchRLModule(LightningModule):
         V_values[batch.terminal] = 0.
         td_target = batch.reward + self.hparams.gamma * V_values
         return td_target
-    
+
     def training_step(self, batch: Trajectory | PRIORITIZED_TRAJECTORY, batch_idx: int) -> Tensor:
         do_step = self.batch_step % self.hparams.batches_per_step == 0
         self.batch_step += 1
@@ -216,12 +221,12 @@ class CatchRLModule(LightningModule):
             self.episode_reward += reward
             self.log('epsilon', self.agent.epsilon, on_step=True,
                      on_epoch=False, prog_bar=False)
-            self.log_dict({'step': self.global_step,
-                           'episode': self.episode,
+            self.log_dict({'step': float(self.global_step),
+                           'episode': float(self.episode),
                            }, on_step=True, on_epoch=False, prog_bar=True)
 
             if terminal:
-                self.log("episode reward", self.episode_reward,
+                self.log("episode reward", float(self.episode_reward),
                          on_step=True, on_epoch=True, prog_bar=False)
                 self.episode += 1
                 self.episode_reward = 0
@@ -244,7 +249,7 @@ class CatchRLModule(LightningModule):
                     freeze_time=True, epsilon=0.)
                 total_reward += reward
 
-        self.log("test/total_reward", total_reward,
+        self.log("test/total_reward", float(total_reward),
                  on_epoch=True, prog_bar=True)
 
     def train_dataloader(self) -> DataLoader:
@@ -254,13 +259,12 @@ class CatchRLModule(LightningModule):
         self.dataset = ReplayBufferDataset(self.replay_buffer)
         return DataLoader(self.dataset, batch_size=self.hparams.batch_size)
 
-
     def configure_optimizers(self) -> Optimizer:
         # Both Q-network and V-network parameters are optimized
         if self.algorithm in DQV_FAMILY:
             params = list(self.Q_network.parameters()) + \
                 list(self.V_network.parameters())
-            return Adam(params, lr=self.hparams.learning_rate)
+            return OPTIMIZERS[self.hparams.optimizer](params, lr=self.hparams.learning_rate)
 
         # Only the Q-network's parameters are optimized
         return Adam(self.Q_network.parameters(), lr=self.hparams.learning_rate)

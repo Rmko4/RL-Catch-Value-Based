@@ -17,6 +17,8 @@ def get_args():
                         help="Batch size for training")
     parser.add_argument("--batches_per_step", type=int, default=1,
                         help="Number of batches to sample from replay buffer per agent step")
+    parser.add_argument("--optimizer", type=str, default="Adam",
+                        choices=["Adam", "RMSprop", "SGD"])
     parser.add_argument("--learning_rate", type=float, default=1e-3,
                         help="Learning rate for training")
     parser.add_argument("--gamma", type=float, default=0.99,
