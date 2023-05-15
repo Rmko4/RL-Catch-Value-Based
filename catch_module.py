@@ -161,7 +161,7 @@ class CatchRLModule(LightningModule):
     def training_step(self, batch: Trajectory | PRIORITIZED_TRAJECTORY, batch_idx: int) -> Tensor:
         do_step = self.batch_step % self.hparams.batches_per_step == 0
         self.batch_step += 1
-        
+
         if do_step:
             reward, terminal = self.agent.step()
 
@@ -207,7 +207,8 @@ class CatchRLModule(LightningModule):
                 indices = indices.detach().cpu().numpy()
                 self.replay_buffer.update_priorities(indices, priorities)
 
-        self.update_target_network()
+        if do_step:
+            self.update_target_network()
 
         # Logging
         self.log('train/loss', loss, on_step=False,
