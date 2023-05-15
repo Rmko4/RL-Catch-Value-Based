@@ -35,7 +35,7 @@ class ConvBackboneOld(nn.Module):
         return self.net(x)
 
 
-class ConvBackboneOld2(nn.Module):
+class ConvBackbone(nn.Module):
     def __init__(self,
                  state_shape: Tuple[int] = DEFAULT_STATE_SHAPE,
                  n_filters: int = 32
@@ -66,7 +66,7 @@ class ConvBackboneOld2(nn.Module):
         return self.net(x)
 
 
-class ConvBackbone(nn.Module):
+class ConvBackboneOld2(nn.Module):
     def __init__(self,
                  state_shape: Tuple[int] = DEFAULT_STATE_SHAPE,
                  n_filters: int = 32
