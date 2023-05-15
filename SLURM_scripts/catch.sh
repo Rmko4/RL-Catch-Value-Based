@@ -20,16 +20,16 @@ python train_agent.py \
 --run_name train \
 --max_epochs 100 \
 --batch_size 128 \
---batches_per_step 1 \
+--batches_per_step 2 \
 --optimizer RMSprop \
 --learning_rate 0.0005 \
---gamma 0.99 \
+--gamma 1.0 \
 --epsilon_start 0.5 \
 --epsilon_end 0.01 \
 --epsilon_decay_rate 100 \
 --buffer_capacity 10000 \
 --replay_warmup_steps 10 \
---soft_update_tau 0.05 \
+--soft_update_tau 0.02 \
 --hidden_size 128 \
 --n_filters 16 \
 --algorithm DQN
