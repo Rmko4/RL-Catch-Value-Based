@@ -271,4 +271,4 @@ class CatchRLModule(LightningModule):
             return OPTIMIZERS[self.hparams.optimizer](params, lr=self.hparams.learning_rate)
 
         # Only the Q-network's parameters are optimized
-        return Adam(self.Q_network.parameters(), lr=self.hparams.learning_rate)
+        return OPTIMIZERS[self.hparams.optimizer](self.Q_network.parameters(), lr=self.hparams.learning_rate)
