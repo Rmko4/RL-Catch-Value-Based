@@ -1,7 +1,7 @@
 #!/bin/bash
 
 for i in {2..4}; do
-    run_name="train$i"
+    run_name="train${i}"
     echo "Training $run_name"
 
     python train_agent.py \
@@ -20,8 +20,7 @@ for i in {2..4}; do
         --soft_update_tau 0.05 \
         --hidden_size 256 \
         --n_filters 16 \
-        --algorithm DQN \
-        --double_q_learning
+        --algorithm Dueling_architecture
 
     echo "Training $run_name completed"
 done
