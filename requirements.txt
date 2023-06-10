@@ -8,3 +8,4 @@ wandb
 moviepy
 imageio
 matplotlib
+pandas
