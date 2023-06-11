@@ -44,7 +44,7 @@ class CatchRLModule(LightningModule):
                  prioritized_replay: bool = False,
                  prioritized_replay_alpha: float = 0.6,
                  prioritized_replay_beta: float = 0.4,
-                 target_net_update_freq: int = None,
+                 target_net_update_freq: int | None = None,
                  soft_update_tau: float = 1e-3,
                  hidden_size: int = 128,
                  n_filters: int = 32,
@@ -98,7 +98,7 @@ class CatchRLModule(LightningModule):
         self.episode_reward = 0
         self.batch_step = 0
 
-    def compute_next_Q(self):
+    def compute_next_Q(self, batch: Trajectory) -> Tensor:
         raise NotImplementedError
 
     def update_target_network(self):
@@ -109,7 +109,7 @@ class CatchRLModule(LightningModule):
 
     def replay_warmup(self):
         hp = self.hparams
-        warmup_steps = hp.replay_warmup_steps
+        warmup_steps: int = hp.replay_warmup_steps
         for _ in range(warmup_steps):
             _, terminal = self.agent.step(freeze_time=True, epsilon=1.)
             if terminal:
@@ -271,4 +271,4 @@ class CatchRLModule(LightningModule):
             return OPTIMIZERS[self.hparams.optimizer](params, lr=self.hparams.learning_rate)
 
         # Only the Q-network's parameters are optimized
-        return Adam(self.Q_network.parameters(), lr=self.hparams.learning_rate)
+        return OPTIMIZERS[self.hparams.optimizer](self.Q_network.parameters(), lr=self.hparams.learning_rate)

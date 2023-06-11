@@ -34,7 +34,6 @@ class ReplayBuffer(ABC):
         self.index = (self.index + 1) % self.capacity
 
     @abstractmethod
-    # TODO: Consider output type
     def sample(self, batch_size: int, *args, **kwargs) -> List[Trajectory]:
         pass
 
@@ -62,7 +61,6 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         self.alpha = alpha
         self.beta = beta
 
-    # TODO: Consider appending while trajectory is still to be updated.
     def append(self, trajectory: Trajectory) -> None:
         self.priorities[self.index] = self.priorities.max() \
             if self.buffer else 1.0

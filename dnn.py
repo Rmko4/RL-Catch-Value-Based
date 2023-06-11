@@ -7,7 +7,7 @@ DEFAULT_STATE_SHAPE = (84, 84, 4)
 
 class ConvBackboneOld(nn.Module):
     def __init__(self,
-                 state_shape: Tuple[int] = DEFAULT_STATE_SHAPE,
+                 state_shape: Tuple[int, ...] = DEFAULT_STATE_SHAPE,
                  n_filters: int = 32
                  ) -> None:
         super().__init__()
@@ -37,7 +37,7 @@ class ConvBackboneOld(nn.Module):
 
 class ConvBackbone(nn.Module):
     def __init__(self,
-                 state_shape: Tuple[int] = DEFAULT_STATE_SHAPE,
+                 state_shape: Tuple[int, ...] = DEFAULT_STATE_SHAPE,
                  n_filters: int = 32
                  ) -> None:
         super().__init__()
@@ -68,7 +68,7 @@ class ConvBackbone(nn.Module):
 
 class ConvBackboneOld2(nn.Module):
     def __init__(self,
-                 state_shape: Tuple[int] = DEFAULT_STATE_SHAPE,
+                 state_shape: Tuple[int, ...] = DEFAULT_STATE_SHAPE,
                  n_filters: int = 32
                  ) -> None:
         super().__init__()
@@ -99,7 +99,7 @@ class ConvBackboneOld2(nn.Module):
 class DeepQNetwork(nn.Module):
     def __init__(self,
                  n_actions: int = 3,
-                 state_shape: Tuple[int] = DEFAULT_STATE_SHAPE,
+                 state_shape: Tuple[int, ...] = DEFAULT_STATE_SHAPE,
                  hidden_size: int = 128,
                  n_filters: int = 32
                  ) -> None:
@@ -120,7 +120,7 @@ class DeepQNetwork(nn.Module):
 
 class DeepVNetwork(nn.Module):
     def __init__(self,
-                 state_shape: Tuple[int] = DEFAULT_STATE_SHAPE,
+                 state_shape: Tuple[int, ...] = DEFAULT_STATE_SHAPE,
                  hidden_size: int = 128,
                  n_filters: int = 32
                  ) -> None:
@@ -142,7 +142,7 @@ class DeepVNetwork(nn.Module):
 class DuelingDQN(nn.Module):
     def __init__(self,
                  n_actions: int = 3,
-                 state_shape: Tuple[int] = DEFAULT_STATE_SHAPE,
+                 state_shape: Tuple[int, ...] = DEFAULT_STATE_SHAPE,
                  hidden_size: int = 128,
                  n_filters: int = 32
                  ) -> None:
