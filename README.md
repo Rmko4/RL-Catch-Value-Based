@@ -8,7 +8,7 @@ An implementation of the following methods: Deep Q-Network (DQN), Double Deep Q-
 
 The methods are trained and evaluated on the Catch game.
 ## Example of trained agent
-![output](https://github.com/Rmko4/RL-Catch-Value-Based/assets/55834815/5022a617-f350-41b8-8414-f0fd33dd6b83)
+![output](https://github.com/Rmko4/RL-Catch-Value-Based/assets/55834815/1b3b6a75-870c-4e83-9d5d-110edce5f353)
 
 
 ## Running the code
